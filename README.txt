@@ -1,31 +1,9 @@
-CHECKLIST CDE - LIVE PWA VERSIE
+CHECKLIST CDE - SUPABASE ONLINE VERSIE
 
-Sleep ALLE bestanden uit deze map naar je GitHub repository.
+1. Open Supabase > SQL Editor.
+2. Plak de inhoud van supabase-setup.sql en klik Run.
+3. Upload alle bestanden naar GitHub.
+4. Commit changes.
+5. Wacht 1-3 minuten en open je live app.
 
-Bestanden:
-- index.html
-- manifest.webmanifest
-- sw.js
-- icon.svg
-- README.txt
-
-GitHub Pages:
-1. Settings > Pages
-2. Source: Deploy from a branch
-3. Branch: main
-4. Folder: /root
-5. Save
-
-Op tablet/telefoon als app:
-Android/Chrome:
-- Open de live link
-- Drie puntjes
-- Toevoegen aan startscherm / App installeren
-
-iPhone/iPad/Safari:
-- Open de live link
-- Deel-knop
-- Zet op beginscherm
-
-Let op:
-Gegevens worden lokaal per apparaat opgeslagen. Voor gezamenlijke online opslag is later een database nodig.
+Deze versie slaat online op in Supabase zodat pc, tablet en telefoon dezelfde checklists zien.
