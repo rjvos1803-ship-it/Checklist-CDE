@@ -1,9 +1,25 @@
-CHECKLIST CDE - SUPABASE ONLINE VERSIE
+CHECKLIST CDE - DASHBOARD + FOTO OPENEN
 
-1. Open Supabase > SQL Editor.
-2. Plak de inhoud van supabase-setup.sql en klik Run.
-3. Upload alle bestanden naar GitHub.
-4. Commit changes.
-5. Wacht 1-3 minuten en open je live app.
+Upload alle bestanden naar GitHub:
+- index.html
+- manifest.webmanifest
+- sw.js
+- icon.svg
+- README.txt
 
-Deze versie slaat online op in Supabase zodat pc, tablet en telefoon dezelfde checklists zien.
+Nieuw in deze versie:
+- Dashboard als aparte overzichtspagina
+- Filteren op vanaf datum
+- Filteren op tot datum
+- Filteren op weeknummer
+- Zoeken op tekst/teamleider
+- Foto-miniaturen in dashboard
+- Foto's groot openen door erop te klikken
+- Online opslag via Supabase blijft hetzelfde
+
+Na uploaden:
+1. GitHub repository openen
+2. Add file > Upload files
+3. Alle bestanden slepen
+4. Commit changes
+5. 1-3 minuten wachten
