@@ -47,7 +47,56 @@ button.secondary{background:#e2e8f0;color:#0f172a}button.danger{background:var(-
 .modal button{position:absolute;top:18px;right:18px;background:var(--red)}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.filtergrid,.meta{grid-template-columns:1fr 1fr}.five-grid{grid-template-columns:1fr}}
 @media(max-width:600px){header h1{font-size:20px}.header-actions{display:none}.grid,.filtergrid,.meta{grid-template-columns:1fr}.container{padding:12px}.bottomnav button{flex:1;font-size:13px;padding:10px 8px}.table{font-size:14px}}
-@media print{header,.bottomnav,.no-print,button,input[type=file],.modal{display:none!important}body{background:white;padding-bottom:0}.container{max-width:none;padding:0}.section,.footer,.card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}.hidden{display:block!important}textarea,input[type=text]{border:1px solid #ccc}.table{min-width:0}}
+@media print{
+header,.bottomnav,.no-print,button,input[type=file],.modal,#dashboardView{display:none!important}
+body{
+ background:white;
+ padding-bottom:0;
+ font-family:Arial,sans-serif;
+ color:#111827;
+}
+.container{
+ max-width:none;
+ padding:0;
+}
+#checklistView,#fiveSView{
+ display:block!important;
+}
+.card,.section,.footer{
+ box-shadow:none;
+ border:1px solid #cbd5e1;
+ break-inside:avoid;
+ margin-bottom:14px;
+ border-radius:8px;
+}
+.section h2,.footer h2,.card h2{
+ color:#002b5c;
+ border-bottom:2px solid #002b5c;
+ padding-bottom:6px;
+ margin-bottom:12px;
+}
+textarea,input[type=text]{
+ border:1px solid #cbd5e1;
+ background:#fff;
+ color:#111827;
+}
+.photo-grid{
+ display:flex;
+ flex-wrap:wrap;
+ gap:12px;
+}
+.photo{
+ width:180px;
+ height:140px;
+ border:1px solid #94a3b8;
+}
+.progressbar{
+ display:none;
+}
+.badge{
+ border:1px solid #93c5fd;
+}
+}
 </style>
 </head>
 <body>
@@ -136,7 +185,13 @@ function newChecklist(){currentRecord=emptyRecord();renderChecklist()}
 function openRecord(id){currentRecord=ensureRecordShape(cachedRecords.find(r=>r.id===id));renderChecklist()}
 async function deleteRecord(id){if(!confirm("Weet je zeker dat je deze checklist wilt verwijderen?"))return;try{await deleteRecordDb(id);await showDashboard()}catch(e){alert("Verwijderen mislukt: "+e.message)}}
 
-function renderChecklist(){if(!currentRecord)currentRecord=emptyRecord();hideAll();checklistView.classList.remove("hidden");const done=countDone(currentRecord),total=countTotal(currentRecord),percent=Math.round(done/total*100);let html=`<div class="card no-print"><h2>Checklist voortgang</h2><p>${done} van ${total} punten afgevinkt (${percent}%).</p><div class="progressbar"><div style="width:${percent}%"></div></div><p><button onclick="showFiveS()">Naar 5S Checklist</button></p></div>`;checklistTemplate.forEach((section,sIndex)=>{html+=`<div class="section"><h2>${sIndex+1}. ${section.title}</h2>`;section.items.forEach((label,iIndex)=>{const item=currentRecord.items.find(x=>x.section===sIndex&&x.index===iIndex);html+=`<div class="item"><div class="row"><input type="checkbox" ${item.checked?"checked":""} onchange="updateChecked(${sIndex},${iIndex},this.checked)"><label>${label}</label></div><textarea placeholder="Opmerking toevoegen..." oninput="updateComment(${sIndex},${iIndex},this.value)">${escapeHtml(item.comment)}</textarea></div>`});if(sIndex===1||sIndex===5)html+=renderPhotoBox(sIndex+1);html+=`</div>`});html+=renderFooter();checklistView.innerHTML=html}
+function renderChecklist(){if(!currentRecord)currentRecord=emptyRecord();hideAll();checklistView.classList.remove("hidden");const done=countDone(currentRecord),total=countTotal(currentRecord),percent=Math.round(done/total*100);let html=`<div class="card pdf-header">
+<h1 style="margin:0;color:#002b5c;font-size:30px;">Ploegenoverdracht - CDE</h1>
+<p style="margin-top:10px;"><strong>Datum:</strong> ${currentRecord.dateTime || "-"}<br>
+<strong>Overdragende teamleider:</strong> ${currentRecord.handoverLeader || "-"}<br>
+<strong>Ontvangende teamleider:</strong> ${currentRecord.receivingLeader || "-"}</p>
+</div>
+<div class="card no-print"><h2>Checklist voortgang</h2><p>${done} van ${total} punten afgevinkt (${percent}%).</p><div class="progressbar"><div style="width:${percent}%"></div></div><p><button onclick="showFiveS()">Naar 5S Checklist</button></p></div>`;checklistTemplate.forEach((section,sIndex)=>{html+=`<div class="section"><h2>${sIndex+1}. ${section.title}</h2>`;section.items.forEach((label,iIndex)=>{const item=currentRecord.items.find(x=>x.section===sIndex&&x.index===iIndex);html+=`<div class="item"><div class="row"><input type="checkbox" ${item.checked?"checked":""} onchange="updateChecked(${sIndex},${iIndex},this.checked)"><label>${label}</label></div><textarea placeholder="Opmerking toevoegen..." oninput="updateComment(${sIndex},${iIndex},this.value)">${escapeHtml(item.comment)}</textarea></div>`});if(sIndex===1||sIndex===5)html+=renderPhotoBox(sIndex+1);html+=`</div>`});html+=renderFooter();checklistView.innerHTML=html}
 function renderPhotoBox(sectionNumber){const photos=currentRecord.photos[String(sectionNumber)]||[];return `<div class="photo-box"><h3>Foto's bij punt ${sectionNumber}</h3><input class="no-print" type="file" accept="image/*" capture="environment" multiple onchange="addPhotos(${sectionNumber}, this.files)"><div class="photo-grid">${photos.map((src,idx)=>`<div class="photo"><img src="${src}" onclick="openPhoto('${src}')"><button class="no-print" onclick="removePhoto(${sectionNumber},${idx})">x</button></div>`).join("")}</div></div>`}
 function renderFooter(){return `<div class="footer"><h2>Ondertekening</h2><div class="meta"><div><label>Overdragende teamleider</label><input type="text" value="${escapeHtml(currentRecord.handoverLeader)}" oninput="currentRecord.handoverLeader=this.value"></div><div><label>Ontvangende teamleider</label><input type="text" value="${escapeHtml(currentRecord.receivingLeader)}" oninput="currentRecord.receivingLeader=this.value"></div><div><label>Datum / Tijd</label><input type="text" value="${escapeHtml(currentRecord.dateTime)}" oninput="currentRecord.dateTime=this.value"></div></div><div style="margin-top:20px;" class="no-print"><button class="green" onclick="saveChecklist()">Online opslaan</button> <button onclick="showFiveS()">5S Checklist</button> <button class="orange" onclick="savePdf()">Opslaan als PDF</button> <button class="secondary" onclick="showDashboard()">Terug naar dashboard</button></div><div id="saved" class="success">Checklist online opgeslagen.</div></div>`}
 function showFiveS(){if(!currentRecord)currentRecord=emptyRecord();hideAll();fiveSView.classList.remove("hidden");const done=countFiveS(currentRecord),total=currentRecord.fiveS.length;fiveSView.innerHTML=`<div class="card"><h2>5S Checklist</h2><p>${done} van ${total} punten afgevinkt.</p><div class="progressbar"><div style="width:${Math.round(done/total*100)}%"></div></div></div><div class="section"><h2>5S Controle</h2><div class="five-grid">${currentRecord.fiveS.map((item,idx)=>`<div class="five-item"><div class="row"><input type="checkbox" ${item.checked?"checked":""} onchange="updateFiveS(${idx},this.checked)"><label>${item.label}</label></div></div>`).join("")}</div></div><div class="footer no-print"><button class="green" onclick="saveChecklist()">Online opslaan</button> <button onclick="renderChecklist()">Terug naar checklist</button> <button class="orange" onclick="savePdf()">Opslaan als PDF</button></div>`}
