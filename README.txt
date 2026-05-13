@@ -25,10 +25,9 @@ Na uploaden:
 5. 1-3 minuten wachten
 
 
-EXTRA TOEGEVOEGD:
-- Professionele PDF rapportage
-- Alleen actieve overdracht wordt geëxporteerd
-- Dashboard print niet meer mee
-- Foto's netjes in PDF
-- Professionele A4 opmaak
-- Teamleiders + datum bovenaan rapport
+PDF AANPASSING:
+- PDF opent nu in een apart printvenster.
+- Dashboard wordt nooit meer meegenomen.
+- PDF bevat alleen de geopende overdracht.
+- Inhoud PDF: Checklist + 5S + foto's.
+- Professionele rapportopmaak voor archivering.
