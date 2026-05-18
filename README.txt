@@ -34,3 +34,18 @@ UPDATE DEFINITIEF:
 - Meerdere foto's mogelijk.
 - Foto's gehele order worden meegenomen in PDF.
 - Datum/tijd is vastgezet en niet aanpasbaar.
+
+
+UPDATE EXPEDITIE:
+- Nieuwe knop onderin: Expeditie
+- Nieuwe aparte module: Expeditiecontrole
+- Keuze: binnenkomende vracht of uitgaande vracht
+- Foto maken of uit album kiezen van geladen trailer
+- Controle: zonder schade gelost of geladen
+- Opmerking mogelijk
+- Aparte PDF voor expeditiecontrole
+- Aparte dashboard-tab voor expeditie
+- Nieuwe Supabase tabel: expeditiecontroles
+
+BELANGRIJK:
+Voer supabase-setup.sql opnieuw uit in Supabase SQL Editor.

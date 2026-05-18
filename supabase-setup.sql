@@ -16,3 +16,27 @@ create policy "Iedereen mag ingangscontroles lezen" on ingangscontroles for sele
 create policy "Iedereen mag ingangscontroles toevoegen" on ingangscontroles for insert with check (true);
 create policy "Iedereen mag ingangscontroles wijzigen" on ingangscontroles for update using (true);
 create policy "Iedereen mag ingangscontroles verwijderen" on ingangscontroles for delete using (true);
+
+-- Nieuwe tabel voor expeditiecontrole
+create table if not exists expeditiecontroles (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamp with time zone default now(),
+  datum_tijd text,
+  vracht_type text,
+  zonder_schade text,
+  opmerking text,
+  photos jsonb,
+  status text default 'Opgeslagen'
+);
+
+alter table expeditiecontroles enable row level security;
+
+drop policy if exists "Iedereen mag expeditiecontroles lezen" on expeditiecontroles;
+drop policy if exists "Iedereen mag expeditiecontroles toevoegen" on expeditiecontroles;
+drop policy if exists "Iedereen mag expeditiecontroles wijzigen" on expeditiecontroles;
+drop policy if exists "Iedereen mag expeditiecontroles verwijderen" on expeditiecontroles;
+
+create policy "Iedereen mag expeditiecontroles lezen" on expeditiecontroles for select using (true);
+create policy "Iedereen mag expeditiecontroles toevoegen" on expeditiecontroles for insert with check (true);
+create policy "Iedereen mag expeditiecontroles wijzigen" on expeditiecontroles for update using (true);
+create policy "Iedereen mag expeditiecontroles verwijderen" on expeditiecontroles for delete using (true);
