@@ -95,7 +95,7 @@ create policy "Iedereen mag app_users lezen" on app_users for select using (true
 create policy "Iedereen mag app_users toevoegen" on app_users for insert with check (true);
 create policy "Iedereen mag app_users wijzigen" on app_users for update using (true);
 
-insert into app_users 
+insert into app_users
 (username, password, display_name, can_dashboard, can_overdracht, can_5s, can_ingang, can_expeditie, is_admin, is_active)
 values
 ('robert', '1234', 'Robert', true, true, true, true, true, true, true),
@@ -103,12 +103,12 @@ values
 ('expeditie', '1234', 'Expeditie', false, false, false, false, true, false, true),
 ('ingang', '1234', 'Ingangscontrole', false, false, false, true, false, false, true)
 on conflict (username) do update set
-password = excluded.password,
-display_name = excluded.display_name,
-can_dashboard = excluded.can_dashboard,
-can_overdracht = excluded.can_overdracht,
-can_5s = excluded.can_5s,
-can_ingang = excluded.can_ingang,
-can_expeditie = excluded.can_expeditie,
-is_admin = excluded.is_admin,
-is_active = excluded.is_active;
+password=excluded.password,
+display_name=excluded.display_name,
+can_dashboard=excluded.can_dashboard,
+can_overdracht=excluded.can_overdracht,
+can_5s=excluded.can_5s,
+can_ingang=excluded.can_ingang,
+can_expeditie=excluded.can_expeditie,
+is_admin=excluded.is_admin,
+is_active=excluded.is_active;

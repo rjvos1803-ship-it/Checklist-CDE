@@ -27,16 +27,25 @@ input,textarea,select{margin-top:7px;padding:10px;border:1px solid #cbd5e1;borde
 .hidden{display:none!important} .notice{padding:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;margin-bottom:14px} .error{padding:12px;background:#fee2e2;border:1px solid #fecaca;border-radius:10px;margin-bottom:14px}
 @media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.meta,.filtergrid{grid-template-columns:1fr 1fr}.bottomnav button{min-width:auto;flex:1;font-size:12px;padding:9px 5px}}
 @media(max-width:560px){.grid,.meta,.filtergrid{grid-template-columns:1fr}.container{padding:12px} header h1{font-size:18px}}
+
+.login-wrap{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:100%;max-width:430px;background:white;border-radius:18px;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,.14)}
+.login-card img{width:90px;height:90px;object-fit:contain;display:block;margin:0 auto 12px}
+.userbar{background:#e0f2fe;color:#0f172a;padding:8px 12px;border-radius:999px;font-size:14px}
+.admin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:560px){.admin-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header><h1><img src="./icon.png" alt="">Checklist CDE</h1><button onclick="showDashboard()">Dashboard</button></header>
-<div class="container">
+<header><h1><img src="./icon.png" alt="">Checklist CDE</h1><span id="userBar" class="userbar"></span><button onclick="logout()">Uitloggen</button></header>
+<div id="loginView" class="login-wrap"></div>
+<div class="container" id="appContainer" style="display:none">
 <main id="dashboardView"></main>
 <main id="handoverView" class="hidden"></main>
 <main id="fiveSView" class="hidden"></main>
 <main id="inboundView" class="hidden"></main>
 <main id="expeditieView" class="hidden"></main>
+<main id="adminView" class="hidden"></main>
 </div>
 <nav class="bottomnav">
 <button onclick="showDashboard()">Dashboard</button>
@@ -45,13 +54,13 @@ input,textarea,select{margin-top:7px;padding:10px;border:1px solid #cbd5e1;borde
 <button onclick="newInbound()">Ingang</button>
 <button onclick="newExpeditie()">Expeditie</button>
 <button class="green" onclick="saveCurrent()">Opslaan</button>
-<button class="orange" onclick="pdfCurrent()">PDF</button>
+<button class="orange" onclick="pdfCurrent()">PDF</button><button id="adminNavBtn" onclick="showAdmin()" style="display:none">Admin</button>
 </nav>
 <div id="photoModal" class="modal" onclick="closePhoto()"><button>Sluiten</button><img id="modalImg"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const supabaseClient=window.supabase.createClient("https://zuvavqygpacbohxjeuzu.supabase.co","sb_publishable_xvdpTG3mGRQm718DeaUPJA_GyGHpX-e");
-let mode="dashboard",currentHandover=null,currentInbound=null,currentExpeditie=null,handovers=[],inbounds=[],expedities=[];
+let mode="dashboard",currentUser=null,currentHandover=null,currentInbound=null,currentExpeditie=null,handovers=[],inbounds=[],expedities=[];
 
 const checklistTemplate=[
 {title:"Productie & Planning",items:["Status productie (gelopen / achterstand / voor op schema)","Aantal m² gecoat t.o.v. planning","Lopende orders (kritisch / prioriteit)","Orders niet gehaald + reden","Planning volgende ploeg (focuspunten)"]},
@@ -75,7 +84,7 @@ const inboundTemplate=[
 
 const $=id=>document.getElementById(id);
 function esc(s){return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-function hideAll(){["dashboardView","handoverView","fiveSView","inboundView","expeditieView"].forEach(id=>$(id).classList.add("hidden"))}
+function hideAll(){["dashboardView","handoverView","fiveSView","inboundView","expeditieView","adminView"].forEach(id=>$(id).classList.add("hidden"))}
 function parseDateNL(str){const m=String(str||"").match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const d=new Date(str);return isNaN(d)?null:d}
 function isoDate(r){const d=parseDateNL(r.dateTime);return d?d.toISOString().slice(0,10):""}
 function weekNo(d){d=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-n);const y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
@@ -124,7 +133,14 @@ async function saveInbound(){if(!currentInbound.orderNumber.trim())return alert(
 async function saveExpeditie(){if(!currentExpeditie.vrachtType)return alert("Kies vracht type");if(!currentExpeditie.zonderSchade)return alert("Kies zonder schade ja/nee");let row={datum_tijd:currentExpeditie.dateTime,vracht_type:currentExpeditie.vrachtType,zonder_schade:currentExpeditie.zonderSchade,opmerking:currentExpeditie.opmerking,photos:currentExpeditie.photos,status:"Opgeslagen"};let r=currentExpeditie.id?await supabaseClient.from("expeditiecontroles").update(row).eq("id",currentExpeditie.id).select().single():await supabaseClient.from("expeditiecontroles").insert(row).select().single();if(r.error)return alert(r.error.message);currentExpeditie.id=r.data.id;alert("Opgeslagen");await loadData()}
 function saveCurrent(){if(mode==="expeditie")saveExpeditie();else if(mode==="inbound")saveInbound();else if(currentHandover)saveHandover();else alert("Open eerst iets")}
 
-function reportWindow(title,body){let w=window.open("","_blank");if(!w)return alert("Sta pop-ups toe");w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial;font-size:12px;color:#111}h1{color:#002b5c;border-bottom:4px solid #002b5c;padding-bottom:10px}h2{color:#002b5c}.meta,.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.box,.section{border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin-bottom:12px;break-inside:avoid}.check{display:inline-flex;width:17px;height:17px;border:1.5px solid #002b5c;align-items:center;justify-content:center;margin-right:8px;font-weight:bold}.item{border-bottom:1px solid #e5e7eb;padding:7px 0}.comment{margin:6px 0 0 25px;background:#f8fafc;border-left:3px solid #0057b8;padding:8px;white-space:pre-wrap}.photos{display:grid;grid-template-columns:1fr 1fr;gap:10px}.photos img{width:100%;max-height:230px;object-fit:contain;border:1px solid #cbd5e1;border-radius:8px}</style></head><body>${body}</body></html>`);w.document.close();setTimeout(()=>{w.focus();w.print()},350)}
+function reportWindow(title,body){let w=window.open("","_blank");if(!w)return alert("Sta pop-ups toe");w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial;font-size:12px;color:#111}h1{color:#002b5c;border-bottom:4px solid #002b5c;padding-bottom:10px}h2{color:#002b5c}.meta,.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.box,.section{border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin-bottom:12px;break-inside:avoid}.check{display:inline-flex;width:17px;height:17px;border:1.5px solid #002b5c;align-items:center;justify-content:center;margin-right:8px;font-weight:bold}.item{border-bottom:1px solid #e5e7eb;padding:7px 0}.comment{margin:6px 0 0 25px;background:#f8fafc;border-left:3px solid #0057b8;padding:8px;white-space:pre-wrap}.photos{display:grid;grid-template-columns:1fr 1fr;gap:10px}.photos img{width:100%;max-height:230px;object-fit:contain;border:1px solid #cbd5e1;border-radius:8px}
+.login-wrap{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:100%;max-width:430px;background:white;border-radius:18px;padding:24px;box-shadow:0 8px 24px rgba(0,0,0,.14)}
+.login-card img{width:90px;height:90px;object-fit:contain;display:block;margin:0 auto 12px}
+.userbar{background:#e0f2fe;color:#0f172a;padding:8px 12px;border-radius:999px;font-size:14px}
+.admin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:560px){.admin-grid{grid-template-columns:1fr}}
+</style></head><body>${body}</body></html>`);w.document.close();setTimeout(()=>{w.focus();w.print()},350)}
 function photoReport(obj){return Object.values(obj||{}).flat().map(p=>`<img src="${p}">`).join("")}
 function pdfHandoverById(id){currentHandover=handovers.find(x=>x.id===id);pdfHandover()} function pdfInboundById(id){currentInbound=inbounds.find(x=>x.id===id);pdfInbound()} function pdfExpeditieById(id){currentExpeditie=expedities.find(x=>x.id===id);pdfExpeditie()}
 function pdfHandover(){if(!currentHandover)return alert("Open overdracht");let body=`<h1>Ploegenoverdracht - CDE</h1><div class="meta"><div class="box"><b>Datum</b><br>${esc(currentHandover.dateTime)}</div><div class="box"><b>Overdragend</b><br>${esc(currentHandover.handoverLeader||"-")}</div><div class="box"><b>Ontvangend</b><br>${esc(currentHandover.receivingLeader||"-")}</div></div>`;checklistTemplate.forEach((s,si)=>{body+=`<div class="section"><h2>${si+1}. ${esc(s.title)}</h2>`;s.items.forEach((label,ii)=>{let it=currentHandover.items.find(x=>x.section===si&&x.index===ii)||{};body+=`<div class="item"><span class="check">${it.checked?"✓":""}</span><b>${esc(label)}</b>${it.comment?`<div class="comment">${esc(it.comment)}</div>`:""}</div>`});let ps=currentHandover.photos[String(si+1)]||[];if(ps.length)body+=`<div class="photos">${ps.map(p=>`<img src="${p}">`).join("")}</div>`;body+=`</div>`});body+=`<div class="section"><h2>5S Checklist</h2>${currentHandover.fiveS.map(x=>`<div class="item"><span class="check">${x.checked?"✓":""}</span>${esc(x.label)}</div>`).join("")}</div>`;reportWindow("Ploegenoverdracht_CDE",body)}
@@ -133,7 +149,166 @@ function pdfExpeditie(){if(!currentExpeditie)return alert("Open expeditiecontrol
 function pdfCurrent(){if(mode==="expeditie")pdfExpeditie();else if(mode==="inbound")pdfInbound();else if(currentHandover)pdfHandover();else alert("Open eerst iets")}
 
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"))}
-showDashboard();
+
+// --- LOGIN EN RECHTEN ---
+function hasRight(key){
+  if(!currentUser) return false;
+  if(currentUser.is_admin) return true;
+  return !!currentUser[key];
+}
+
+function showLogin(){
+  document.getElementById("appContainer").style.display="none";
+  loginView.style.display="flex";
+  loginView.innerHTML=`
+  <div class="login-card">
+    <img src="./icon.png" alt="Logo">
+    <h2 style="text-align:center">Checklist CDE</h2>
+    <p style="text-align:center;color:#64748b">Log in met gebruikersnaam en wachtwoord</p>
+    <label>Gebruikersnaam</label>
+    <input id="loginUsername" type="text" autocomplete="username" placeholder="bijv. robert">
+    <label>Wachtwoord</label>
+    <input id="loginPassword" type="password" autocomplete="current-password" placeholder="wachtwoord">
+    <button style="width:100%;margin-top:16px" onclick="login()">Inloggen</button>
+    <p style="font-size:12px;color:#64748b;margin-top:14px">Test: robert / 1234</p>
+  </div>`;
+}
+
+async function login(){
+  const username=loginUsername.value.trim();
+  const password=loginPassword.value;
+  if(!username||!password) return alert("Vul gebruikersnaam en wachtwoord in.");
+  const {data,error}=await supabaseClient.from("app_users").select("*").eq("username",username).eq("password",password).eq("is_active",true).maybeSingle();
+  if(error) return alert("Login fout: "+error.message);
+  if(!data) return alert("Gebruikersnaam of wachtwoord onjuist.");
+  currentUser=data;
+  localStorage.setItem("cde_current_user",JSON.stringify(currentUser));
+  applyRights();
+  showDashboard();
+}
+
+function logout(){
+  localStorage.removeItem("cde_current_user");
+  currentUser=null;
+  showLogin();
+}
+
+function applyRights(){
+  if(!currentUser) return showLogin();
+  loginView.style.display="none";
+  document.getElementById("appContainer").style.display="block";
+  userBar.textContent=(currentUser.display_name||currentUser.username);
+  const map = [
+    ['button[onclick="showDashboard()"]','can_dashboard'],
+    ['button[onclick="newHandover()"]','can_overdracht'],
+    ['button[onclick="showFiveS()"]','can_5s'],
+    ['button[onclick="newInbound()"]','can_ingang'],
+    ['button[onclick="newExpeditie()"]','can_expeditie']
+  ];
+  map.forEach(([sel,right])=>{
+    document.querySelectorAll(sel).forEach(el=>el.style.display=hasRight(right)?"inline-block":"none");
+  });
+  adminNavBtn.style.display=currentUser.is_admin?"inline-block":"none";
+}
+
+function deny(){
+  alert("Geen rechten voor deze module.");
+}
+
+const originalShowDashboard = showDashboard;
+showDashboard = async function(){
+  if(!hasRight("can_dashboard")){
+    if(hasRight("can_overdracht")) return newHandover();
+    if(hasRight("can_ingang")) return newInbound();
+    if(hasRight("can_expeditie")) return newExpeditie();
+    return deny();
+  }
+  return originalShowDashboard();
+};
+
+const originalNewHandover = newHandover;
+newHandover = function(){ if(!hasRight("can_overdracht")) return deny(); originalNewHandover(); };
+
+const originalShowFiveS = showFiveS;
+showFiveS = function(){ if(!hasRight("can_5s")) return deny(); originalShowFiveS(); };
+
+const originalNewInbound = newInbound;
+newInbound = function(){ if(!hasRight("can_ingang")) return deny(); originalNewInbound(); };
+
+const originalNewExpeditie = newExpeditie;
+newExpeditie = function(){ if(!hasRight("can_expeditie")) return deny(); originalNewExpeditie(); };
+
+async function showAdmin(){
+  if(!currentUser?.is_admin) return deny();
+  mode="admin";
+  hideAll();
+  adminView.classList.remove("hidden");
+  adminView.innerHTML="<div class='card'><h2>Gebruikers laden...</h2></div>";
+  const {data,error}=await supabaseClient.from("app_users").select("*").order("username");
+  if(error){adminView.innerHTML=`<div class="error">${esc(error.message)}</div>`;return;}
+  const users=data||[];
+  adminView.innerHTML=`
+  <div class="card">
+    <h2>Gebruikers & rechten</h2>
+    <div class="admin-grid">
+      <div><label>Gebruikersnaam</label><input id="newUserName"></div>
+      <div><label>Wachtwoord</label><input id="newUserPass" value="1234"></div>
+      <div><label>Naam</label><input id="newDisplayName"></div>
+    </div>
+    <br>
+    <label><input type="checkbox" id="rDashboard"> Dashboard</label><br>
+    <label><input type="checkbox" id="rOverdracht"> Overdracht</label><br>
+    <label><input type="checkbox" id="r5s"> 5S</label><br>
+    <label><input type="checkbox" id="rIngang"> Ingangscontrole</label><br>
+    <label><input type="checkbox" id="rExpeditie"> Expeditie</label><br>
+    <label><input type="checkbox" id="rAdmin"> Admin</label><br><br>
+    <button class="green" onclick="createUser()">Gebruiker opslaan</button>
+  </div>
+  <div class="card"><h2>Bestaande gebruikers</h2><div class="table-wrap"><table><thead><tr><th>Gebruiker</th><th>Naam</th><th>Rechten</th></tr></thead><tbody>
+  ${users.map(u=>`<tr><td>${esc(u.username)}</td><td>${esc(u.display_name||"")}</td><td>${[
+    u.can_dashboard?"Dashboard":"",
+    u.can_overdracht?"Overdracht":"",
+    u.can_5s?"5S":"",
+    u.can_ingang?"Ingang":"",
+    u.can_expeditie?"Expeditie":"",
+    u.is_admin?"Admin":""
+  ].filter(Boolean).join(", ")}</td></tr>`).join("")}
+  </tbody></table></div></div>`;
+}
+
+async function createUser(){
+  const username=newUserName.value.trim();
+  const password=newUserPass.value.trim();
+  if(!username||!password) return alert("Gebruikersnaam en wachtwoord zijn verplicht.");
+  const row={
+    username,password,
+    display_name:newDisplayName.value.trim()||username,
+    can_dashboard:rDashboard.checked,
+    can_overdracht:rOverdracht.checked,
+    can_5s:r5s.checked,
+    can_ingang:rIngang.checked,
+    can_expeditie:rExpeditie.checked,
+    is_admin:rAdmin.checked,
+    is_active:true
+  };
+  const {error}=await supabaseClient.from("app_users").upsert(row,{onConflict:"username"});
+  if(error) return alert("Opslaan mislukt: "+error.message);
+  alert("Gebruiker opgeslagen.");
+  showAdmin();
+}
+
+function boot(){
+  const saved=localStorage.getItem("cde_current_user");
+  if(saved){
+    currentUser=JSON.parse(saved);
+    applyRights();
+    showDashboard();
+  } else {
+    showLogin();
+  }
+}
+
+boot();
 </script>
 </body>
 </html>
