@@ -22,3 +22,9 @@ UPDATE:
 - Ingangscontrole heeft nu als laatste stap: Foto van order compleet.
 - Hierbij kunnen meerdere foto's worden gemaakt of uit album gekozen.
 - Foto's van order compleet worden meegenomen in de PDF.
+
+
+UPDATE:
+- Nieuw logo verwerkt in app/icon.
+- 'Order gecontroleerd op schade' gewijzigd naar:
+  'Order gecontroleerd op kwaliteit'
