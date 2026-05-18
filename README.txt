@@ -28,3 +28,9 @@ UPDATE:
 - Nieuw logo verwerkt in app/icon.
 - 'Order gecontroleerd op schade' gewijzigd naar:
   'Order gecontroleerd op kwaliteit'
+
+UPDATE DEFINITIEF:
+- Laatste stap toegevoegd bij Ingangscontrole: Foto maken van gehele order.
+- Meerdere foto's mogelijk.
+- Foto's gehele order worden meegenomen in PDF.
+- Datum/tijd is vastgezet en niet aanpasbaar.
