@@ -31,3 +31,9 @@ PDF AANPASSING:
 - PDF bevat alleen de geopende overdracht.
 - Inhoud PDF: Checklist + 5S + foto's.
 - Professionele rapportopmaak voor archivering.
+
+
+FOTO UPDATE:
+- Bij punt 2 en punt 6 zijn nu twee knoppen:
+  1. Foto maken
+  2. Foto uit album kiezen
