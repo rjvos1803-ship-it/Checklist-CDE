@@ -114,5 +114,6 @@ is_admin=excluded.is_admin,
 is_active=excluded.is_active;
 
 
+-- app_users verwijderen definitief
 drop policy if exists "Iedereen mag app_users verwijderen" on app_users;
 create policy "Iedereen mag app_users verwijderen" on app_users for delete using (true);

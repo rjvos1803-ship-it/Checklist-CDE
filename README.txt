@@ -36,9 +36,9 @@ Standaard accounts:
 Voer supabase-setup.sql opnieuw uit voordat je uploadt.
 
 
-ADMIN UPDATE:
-- Admin ziet wachtwoorden in gebruikersoverzicht.
-- Gebruikers kunnen aangepast worden.
-- Gebruikers kunnen verwijderd worden.
-- Je kunt jezelf niet verwijderen terwijl je bent ingelogd.
-- Voer supabase-setup.sql opnieuw uit voor delete policy.
+ADMIN DEFINITIEF:
+- Wachtwoorden zichtbaar in Admin.
+- Gebruikers aanpassen werkt via knop Aanpassen.
+- Gebruikers verwijderen werkt via knop Verwijderen.
+- Delete policy toegevoegd aan supabase-setup.sql.
+- Op loginpagina staat: Versie admin beheer definitief.
