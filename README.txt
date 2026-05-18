@@ -22,3 +22,14 @@ BELANGRIJK:
 Deze versie toont bovenaan in dashboard:
 'Versie: complete v2 met Expeditiecontrole'
 Als je dat niet ziet, kijk je nog naar cache/oude bestanden.
+
+
+GEBRUIKERS EN RECHTEN:
+- Test-login zonder e-mail.
+- Voer supabase-setup.sql opnieuw uit.
+- Standaard testgebruikers:
+  robert / 1234 = alles + admin
+  teamleider / 1234 = dashboard + overdracht + 5S
+  expeditie / 1234 = alleen expeditie
+  ingang / 1234 = alleen ingangscontrole
+- Robert kan via Admin nieuwe gebruikers aanmaken.
