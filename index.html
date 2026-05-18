@@ -170,7 +170,7 @@ function showLogin(){
     <label>Wachtwoord</label>
     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="wachtwoord">
     <button style="width:100%;margin-top:16px" onclick="login()">Inloggen</button>
-    <p style="font-size:12px;color:#64748b;margin-top:14px">Test: robert / 1234</p>
+    <p style="font-size:12px;color:#64748b;margin-top:14px">Test: robert / 1234<br><b>Versie: admin beheer definitief v2</b></p>
   </div>`;
 }
 
@@ -238,23 +238,45 @@ newInbound = function(){ if(!hasRight("can_ingang")) return deny(); originalNewI
 const originalNewExpeditie = newExpeditie;
 newExpeditie = function(){ if(!hasRight("can_expeditie")) return deny(); originalNewExpeditie(); };
 
+
 async function showAdmin(){
   if(!currentUser?.is_admin) return deny();
   mode="admin";
   hideAll();
   adminView.classList.remove("hidden");
   adminView.innerHTML="<div class='card'><h2>Gebruikers laden...</h2></div>";
+
   const {data,error}=await supabaseClient.from("app_users").select("*").order("username");
-  if(error){adminView.innerHTML=`<div class="error">${esc(error.message)}</div>`;return;}
+  if(error){
+    adminView.innerHTML=`<div class="error">${esc(error.message)}</div>`;
+    return;
+  }
+
   const users=data||[];
+  window.__adminUsers = users;
+
   adminView.innerHTML=`
   <div class="card">
-    <h2>Gebruikers & rechten</h2>
+    <h2>Gebruikers & rechten beheren</h2>
+    <p>Hier kun je gebruikers aanmaken, aanpassen, verwijderen en wachtwoorden bekijken.</p>
+
+    <input type="hidden" id="editUserId">
+
     <div class="admin-grid">
-      <div><label>Gebruikersnaam</label><input id="newUserName"></div>
-      <div><label>Wachtwoord</label><input id="newUserPass" value="1234"></div>
-      <div><label>Naam</label><input id="newDisplayName"></div>
+      <div>
+        <label>Gebruikersnaam</label>
+        <input id="newUserName" placeholder="bijv. expeditie2">
+      </div>
+      <div>
+        <label>Wachtwoord</label>
+        <input id="newUserPass" value="1234">
+      </div>
+      <div>
+        <label>Naam</label>
+        <input id="newDisplayName" placeholder="Naam medewerker">
+      </div>
     </div>
+
     <br>
     <label><input type="checkbox" id="rDashboard"> Dashboard</label><br>
     <label><input type="checkbox" id="rOverdracht"> Overdracht</label><br>
@@ -262,27 +284,97 @@ async function showAdmin(){
     <label><input type="checkbox" id="rIngang"> Ingangscontrole</label><br>
     <label><input type="checkbox" id="rExpeditie"> Expeditie</label><br>
     <label><input type="checkbox" id="rAdmin"> Admin</label><br><br>
-    <button class="green" onclick="createUser()">Gebruiker opslaan</button>
+
+    <button class="green" onclick="saveUserFromAdmin()">Gebruiker opslaan</button>
+    <button class="secondary" onclick="clearUserForm()">Formulier leegmaken</button>
   </div>
-  <div class="card"><h2>Bestaande gebruikers</h2><div class="table-wrap"><table><thead><tr><th>Gebruiker</th><th>Naam</th><th>Rechten</th></tr></thead><tbody>
-  ${users.map(u=>`<tr><td>${esc(u.username)}</td><td>${esc(u.display_name||"")}</td><td>${[
-    u.can_dashboard?"Dashboard":"",
-    u.can_overdracht?"Overdracht":"",
-    u.can_5s?"5S":"",
-    u.can_ingang?"Ingang":"",
-    u.can_expeditie?"Expeditie":"",
-    u.is_admin?"Admin":""
-  ].filter(Boolean).join(", ")}</td></tr>`).join("")}
-  </tbody></table></div></div>`;
+
+  <div class="card">
+    <h2>Bestaande gebruikers</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Gebruiker</th>
+            <th>Wachtwoord</th>
+            <th>Naam</th>
+            <th>Rechten</th>
+            <th>Acties</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${users.map(u=>`
+            <tr>
+              <td><b>${esc(u.username)}</b></td>
+              <td><b>${esc(u.password||"")}</b></td>
+              <td>${esc(u.display_name||"")}</td>
+              <td>${[
+                u.can_dashboard ? "Dashboard" : "",
+                u.can_overdracht ? "Overdracht" : "",
+                u.can_5s ? "5S" : "",
+                u.can_ingang ? "Ingang" : "",
+                u.can_expeditie ? "Expeditie" : "",
+                u.is_admin ? "Admin" : ""
+              ].filter(Boolean).join(", ")}</td>
+              <td>
+                <button onclick="editUserFromAdmin('${u.id}')">Aanpassen</button>
+                <button class="danger" onclick="deleteUserFromAdmin('${u.id}','${esc(u.username)}')">Verwijderen</button>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
 }
 
-async function createUser(){
+function clearUserForm(){
+  editUserId.value="";
+  newUserName.value="";
+  newUserName.disabled=false;
+  newUserPass.value="1234";
+  newDisplayName.value="";
+  rDashboard.checked=false;
+  rOverdracht.checked=false;
+  r5s.checked=false;
+  rIngang.checked=false;
+  rExpeditie.checked=false;
+  rAdmin.checked=false;
+}
+
+function editUserFromAdmin(id){
+  const u=(window.__adminUsers||[]).find(x=>x.id===id);
+  if(!u) return alert("Gebruiker niet gevonden.");
+
+  editUserId.value=u.id;
+  newUserName.value=u.username || "";
+  newUserName.disabled=true;
+  newUserPass.value=u.password || "";
+  newDisplayName.value=u.display_name || "";
+
+  rDashboard.checked=!!u.can_dashboard;
+  rOverdracht.checked=!!u.can_overdracht;
+  r5s.checked=!!u.can_5s;
+  rIngang.checked=!!u.can_ingang;
+  rExpeditie.checked=!!u.can_expeditie;
+  rAdmin.checked=!!u.is_admin;
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function saveUserFromAdmin(){
+  const id=editUserId.value;
   const username=newUserName.value.trim();
   const password=newUserPass.value.trim();
-  if(!username||!password) return alert("Gebruikersnaam en wachtwoord zijn verplicht.");
+
+  if(!username || !password){
+    return alert("Gebruikersnaam en wachtwoord zijn verplicht.");
+  }
+
   const row={
-    username,password,
-    display_name:newDisplayName.value.trim()||username,
+    username,
+    password,
+    display_name:newDisplayName.value.trim() || username,
     can_dashboard:rDashboard.checked,
     can_overdracht:rOverdracht.checked,
     can_5s:r5s.checked,
@@ -291,10 +383,43 @@ async function createUser(){
     is_admin:rAdmin.checked,
     is_active:true
   };
-  const {error}=await supabaseClient.from("app_users").upsert(row,{onConflict:"username"});
-  if(error) return alert("Opslaan mislukt: "+error.message);
+
+  let result;
+  if(id){
+    result=await supabaseClient.from("app_users").update(row).eq("id",id);
+  } else {
+    result=await supabaseClient.from("app_users").upsert(row,{onConflict:"username"});
+  }
+
+  if(result.error){
+    return alert("Opslaan mislukt: " + result.error.message);
+  }
+
   alert("Gebruiker opgeslagen.");
   showAdmin();
+}
+
+async function deleteUserFromAdmin(id, username){
+  if(username === currentUser.username){
+    return alert("Je kunt jezelf niet verwijderen terwijl je bent ingelogd.");
+  }
+
+  if(!confirm("Weet je zeker dat je gebruiker '" + username + "' wilt verwijderen?")){
+    return;
+  }
+
+  const {error}=await supabaseClient.from("app_users").delete().eq("id",id);
+  if(error){
+    return alert("Verwijderen mislukt: " + error.message);
+  }
+
+  alert("Gebruiker verwijderd.");
+  showAdmin();
+}
+
+// Oude functienaam laten bestaan voor compatibiliteit
+async function createUser(){
+  return saveUserFromAdmin();
 }
 
 function boot(){

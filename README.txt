@@ -1,44 +1,13 @@
-CHECKLIST CDE - COMPLETE V2 MET EXPEDITIE
+ADMIN FIX V2
 
-Dit is een SCHONE complete versie.
-Je moet ALLE oude bestanden in GitHub vervangen door deze bestanden.
+Deze versie is gemaakt op basis van jouw aangeleverde index.html.
 
-Bestanden:
-- index.html
-- manifest.webmanifest
-- sw.js
-- icon.png of icon.svg
-- supabase-setup.sql
-- README.txt
+Te controleren na upload:
+- Loginpagina toont: Versie: admin beheer definitief v2
+- Admin tabel toont kolommen:
+  Gebruiker / Wachtwoord / Naam / Rechten / Acties
+- Acties bevat:
+  Aanpassen / Verwijderen
 
-BELANGRIJK:
-1. Voer supabase-setup.sql opnieuw uit in Supabase.
-2. Verwijder oude bestanden in GitHub of overschrijf alles.
-3. Upload ALLE bestanden uit deze ZIP.
-4. Commit changes.
-5. Wacht 1-3 minuten.
-6. Verwijder de oude PWA/app van je telefoon en installeer opnieuw.
-
-Deze versie toont bovenaan in dashboard:
-'Versie: complete v2 met Expeditiecontrole'
-Als je dat niet ziet, kijk je nog naar cache/oude bestanden.
-
-
-LOGIN FIX:
-Deze versie bevat WEL het login scherm.
-
-Standaard accounts:
-- robert / 1234 = alles + admin
-- teamleider / 1234 = dashboard + overdracht + 5S
-- expeditie / 1234 = alleen expeditie
-- ingang / 1234 = alleen ingangscontrole
-
-Voer supabase-setup.sql opnieuw uit voordat je uploadt.
-
-
-ADMIN DEFINITIEF:
-- Wachtwoorden zichtbaar in Admin.
-- Gebruikers aanpassen werkt via knop Aanpassen.
-- Gebruikers verwijderen werkt via knop Verwijderen.
-- Delete policy toegevoegd aan supabase-setup.sql.
-- Op loginpagina staat: Versie admin beheer definitief.
+Upload alle bestanden naar GitHub en overschrijf index.html.
+Voer eventueel supabase-setup-admin-fix.sql uit voor verwijderrechten.
