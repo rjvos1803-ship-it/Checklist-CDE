@@ -34,3 +34,11 @@ Standaard accounts:
 - ingang / 1234 = alleen ingangscontrole
 
 Voer supabase-setup.sql opnieuw uit voordat je uploadt.
+
+
+ADMIN UPDATE:
+- Admin ziet wachtwoorden in gebruikersoverzicht.
+- Gebruikers kunnen aangepast worden.
+- Gebruikers kunnen verwijderd worden.
+- Je kunt jezelf niet verwijderen terwijl je bent ingelogd.
+- Voer supabase-setup.sql opnieuw uit voor delete policy.
