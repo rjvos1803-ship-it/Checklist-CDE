@@ -46,6 +46,7 @@ input,textarea,select{margin-top:7px;padding:10px;border:1px solid #cbd5e1;borde
 <main id="inboundView" class="hidden"></main>
 <main id="expeditieView" class="hidden"></main>
 <main id="adminView" class="hidden"></main>
+<main id="myReportsView" class="hidden"></main>
 </div>
 <nav class="bottomnav">
 <button onclick="showDashboard()">Dashboard</button>
@@ -54,7 +55,7 @@ input,textarea,select{margin-top:7px;padding:10px;border:1px solid #cbd5e1;borde
 <button onclick="newInbound()">Ingang</button>
 <button onclick="newExpeditie()">Expeditie</button>
 <button class="green" onclick="saveCurrent()">Opslaan</button>
-<button class="orange" onclick="pdfCurrent()">PDF</button><!-- centraal opgeslagen --><button id="adminNavBtn" onclick="showAdmin()" style="display:none">Admin</button>
+<button onclick="showMyReports()">Mijn rapporten</button><button class="orange" onclick="pdfCurrent()">PDF</button><button id="adminNavBtn" onclick="showAdmin()" style="display:none">Admin</button>
 </nav>
 <div id="photoModal" class="modal" onclick="closePhoto()"><button>Sluiten</button><img id="modalImg"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -84,7 +85,7 @@ const inboundTemplate=[
 
 const $=id=>document.getElementById(id);
 function esc(s){return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-function hideAll(){["dashboardView","handoverView","fiveSView","inboundView","expeditieView","adminView"].forEach(id=>$(id).classList.add("hidden"))}
+function hideAll(){["dashboardView","handoverView","fiveSView","inboundView","expeditieView","adminView","myReportsView"].forEach(id=>$(id).classList.add("hidden"))}
 function parseDateNL(str){const m=String(str||"").match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const d=new Date(str);return isNaN(d)?null:d}
 function isoDate(r){const d=parseDateNL(r.dateTime);return d?d.toISOString().slice(0,10):""}
 function weekNo(d){d=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-n);const y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
@@ -99,11 +100,11 @@ function emptyExpeditie(){return {id:null,dateTime:new Date().toLocaleString("nl
 
 async function loadData(){
  const h=await supabaseClient.from("overdrachten").select("*").order("created_at",{ascending:false}); if(h.error)throw h.error;
- handovers=(h.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",handoverLeader:r.overdragende_teamleider||"",receivingLeader:r.ontvangende_teamleider||"",items:r.checklist_data||[],fiveS:r.five_s_data||[],photos:r.photos||{"2":[],"6":[]}}));
+ handovers=(h.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",handoverLeader:r.overdragende_teamleider||"",receivingLeader:r.ontvangende_teamleider||"",items:r.checklist_data||[],fiveS:r.five_s_data||[],photos:r.photos||{"2":[],"6":[]},createdBy:r.created_by||""}));
  const i=await supabaseClient.from("ingangscontroles").select("*").order("created_at",{ascending:false}); if(i.error)throw i.error;
- inbounds=(i.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",orderNumber:r.ordernummer||"",controller:r.controleur||"",items:r.checklist_data||[],photos:r.photos||{quality:[],wholeorder:[]}}));
+ inbounds=(i.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",orderNumber:r.ordernummer||"",controller:r.controleur||"",items:r.checklist_data||[],photos:r.photos||{quality:[],wholeorder:[]},createdBy:r.created_by||""}));
  const e=await supabaseClient.from("expeditiecontroles").select("*").order("created_at",{ascending:false}); if(e.error)throw e.error;
- expedities=(e.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",vrachtType:r.vracht_type||"",zonderSchade:r.zonder_schade||"",opmerking:r.opmerking||"",photos:r.photos||{trailer:[]}}));
+ expedities=(e.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",vrachtType:r.vracht_type||"",zonderSchade:r.zonder_schade||"",opmerking:r.opmerking||"",photos:r.photos||{trailer:[]},createdBy:r.created_by||""}));
 }
 
 async function showDashboard(){mode="dashboard";hideAll();dashboardView.classList.remove("hidden");dashboardView.innerHTML="<div class='card'><h2>Laden...</h2></div>";try{await loadData();renderDashboard("overdracht")}catch(e){dashboardView.innerHTML=`<div class="error"><b>Fout:</b> ${esc(e.message)}<br>Run supabase-setup.sql opnieuw.</div>`}}
@@ -116,21 +117,21 @@ function photoBox(obj,key,add,remove){if(!obj[key])obj[key]=[];return `<div clas
 function addPhotosTo(obj,key,files,cb){if(!obj[key])obj[key]=[];Array.from(files).forEach(f=>{let r=new FileReader();r.onload=e=>{obj[key].push(e.target.result);cb()};r.readAsDataURL(f)})}
 
 function newHandover(){mode="handover";currentHandover=emptyHandover();renderHandover()} function openHandover(id){mode="handover";currentHandover=handovers.find(x=>x.id===id);renderHandover()}
-function renderHandover(){hideAll();handoverView.classList.remove("hidden");let done=currentHandover.items.filter(i=>i.checked).length,total=currentHandover.items.length;let html=`<div class="card"><h2>Ploegenoverdracht</h2><p>${done}/${total}</p><div class="progressbar"><div style="width:${Math.round(done/total*100)}%"></div></div></div>`;checklistTemplate.forEach((s,si)=>{html+=`<div class="section"><h2>${si+1}. ${s.title}</h2>`;s.items.forEach((label,ii)=>{let it=currentHandover.items.find(x=>x.section===si&&x.index===ii)||{checked:false,comment:""};html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).checked=this.checked"><b>${esc(label)}</b></div><textarea placeholder="Opmerking" oninput="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).comment=this.value">${esc(it.comment)}</textarea></div>`});if(si===1||si===5)html+=photoBox(currentHandover.photos,String(si+1),`addHandoverPhotos(${si+1},this.files)`,`removeHandoverPhoto(${si+1},`);html+=`</div>`});html+=`<div class="footer"><h2>Ondertekening</h2><div class="meta"><div><label>Overdragende teamleider</label><input value="${esc(currentHandover.handoverLeader)}" oninput="currentHandover.handoverLeader=this.value"></div><div><label>Ontvangende teamleider</label><input value="${esc(currentHandover.receivingLeader)}" oninput="currentHandover.receivingLeader=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentHandover.dateTime)}"></div></div><br><button onclick="showFiveS()">5S</button></div>`;handoverView.innerHTML=html}
+function renderHandover(){hideAll();handoverView.classList.remove("hidden");let done=currentHandover.items.filter(i=>i.checked).length,total=currentHandover.items.length;let html=`<div class="card"><h2>Ploegenoverdracht</h2><p>${done}/${total}</p><div class="progressbar"><div style="width:${Math.round(done/total*100)}%"></div></div></div>`;checklistTemplate.forEach((s,si)=>{html+=`<div class="section"><h2>${si+1}. ${s.title}</h2>`;s.items.forEach((label,ii)=>{let it=currentHandover.items.find(x=>x.section===si&&x.index===ii)||{checked:false,comment:""};html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).checked=this.checked"><b>${esc(label)}</b></div><textarea placeholder="Opmerking" oninput="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).comment=this.value">${esc(it.comment)}</textarea></div>`});if(si===1||si===5)html+=photoBox(currentHandover.photos,String(si+1),`addHandoverPhotos(${si+1},this.files)`,`removeHandoverPhoto(${si+1},`);html+=`</div>`});html+=`<div class="footer"><h2>Ondertekening</h2><div class="meta"><div><label>Overdragende teamleider</label><input value="${esc(currentHandover.handoverLeader)}" oninput="currentHandover.handoverLeader=this.value"></div><div><label>Ontvangende teamleider</label><input value="${esc(currentHandover.receivingLeader)}" oninput="currentHandover.receivingLeader=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentHandover.dateTime)}"></div></div><br><button class="green" onclick="saveHandover()">Opslaan</button> <button onclick="showFiveS()">5S</button> <button class="orange" onclick="pdfHandover()">PDF</button></div>`;handoverView.innerHTML=html}
 function addHandoverPhotos(sec,files){addPhotosTo(currentHandover.photos,String(sec),files,renderHandover)} function removeHandoverPhoto(sec,i){currentHandover.photos[String(sec)].splice(i,1);renderHandover()}
-function showFiveS(){if(!currentHandover)return alert("Open eerst een overdracht");mode="fiveS";hideAll();fiveSView.classList.remove("hidden");fiveSView.innerHTML=`<div class="section"><h2>5S Checklist</h2><div class="five-grid">${currentHandover.fiveS.map((it,i)=>`<div class="five-item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.fiveS[${i}].checked=this.checked;showFiveS()"><b>${esc(it.label)}</b></div></div>`).join("")}</div></div><div class="footer"><button onclick="renderHandover()">Terug</button></div>`}
+function showFiveS(){if(!currentHandover)return alert("Open eerst een overdracht");mode="fiveS";hideAll();fiveSView.classList.remove("hidden");fiveSView.innerHTML=`<div class="section"><h2>5S Checklist</h2><div class="five-grid">${currentHandover.fiveS.map((it,i)=>`<div class="five-item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.fiveS[${i}].checked=this.checked;showFiveS()"><b>${esc(it.label)}</b></div></div>`).join("")}</div></div><div class="footer"><button class="green" onclick="saveHandover()">Opslaan</button> <button onclick="renderHandover()">Terug</button></div>`}
 
 function newInbound(){mode="inbound";currentInbound=emptyInbound();renderInbound()} function openInbound(id){mode="inbound";currentInbound=inbounds.find(x=>x.id===id);if(!currentInbound.photos.quality)currentInbound.photos.quality=[];if(!currentInbound.photos.wholeorder)currentInbound.photos.wholeorder=[];renderInbound()}
-function renderInbound(){hideAll();inboundView.classList.remove("hidden");if(!currentInbound.photos.quality)currentInbound.photos.quality=[];if(!currentInbound.photos.wholeorder)currentInbound.photos.wholeorder=[];let html=`<div class="card"><h2>Ingangscontrole</h2><div class="meta"><div><label>Ordernummer verplicht</label><input value="${esc(currentInbound.orderNumber)}" oninput="currentInbound.orderNumber=this.value"></div><div><label>Controleur</label><input value="${esc(currentInbound.controller)}" oninput="currentInbound.controller=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentInbound.dateTime)}"></div></div></div><div class="section">`;currentInbound.items.forEach((it,i)=>{html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentInbound.items[${i}].checked=this.checked"><b>${esc(it.label)}</b></div><textarea placeholder="${esc(it.commentLabel)}" oninput="currentInbound.items[${i}].comment=this.value">${esc(it.comment)}</textarea>${it.key==="quality"?photoBox(currentInbound.photos,"quality","addInboundQualityPhotos(this.files)","removeInboundQualityPhoto("):""}${it.key==="wholeorder"?photoBox(currentInbound.photos,"wholeorder","addInboundWholePhotos(this.files)","removeInboundWholePhoto("):""}</div>`});html+=`</div><div class="footer"></div>`;inboundView.innerHTML=html}
+function renderInbound(){hideAll();inboundView.classList.remove("hidden");if(!currentInbound.photos.quality)currentInbound.photos.quality=[];if(!currentInbound.photos.wholeorder)currentInbound.photos.wholeorder=[];let html=`<div class="card"><h2>Ingangscontrole</h2><div class="meta"><div><label>Ordernummer verplicht</label><input value="${esc(currentInbound.orderNumber)}" oninput="currentInbound.orderNumber=this.value"></div><div><label>Controleur</label><input value="${esc(currentInbound.controller)}" oninput="currentInbound.controller=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentInbound.dateTime)}"></div></div></div><div class="section">`;currentInbound.items.forEach((it,i)=>{html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentInbound.items[${i}].checked=this.checked"><b>${esc(it.label)}</b></div><textarea placeholder="${esc(it.commentLabel)}" oninput="currentInbound.items[${i}].comment=this.value">${esc(it.comment)}</textarea>${it.key==="quality"?photoBox(currentInbound.photos,"quality","addInboundQualityPhotos(this.files)","removeInboundQualityPhoto("):""}${it.key==="wholeorder"?photoBox(currentInbound.photos,"wholeorder","addInboundWholePhotos(this.files)","removeInboundWholePhoto("):""}</div>`});html+=`</div><div class="footer"><button class="green" onclick="saveInbound()">Opslaan</button> <button class="orange" onclick="pdfInbound()">PDF</button></div>`;inboundView.innerHTML=html}
 function addInboundQualityPhotos(files){addPhotosTo(currentInbound.photos,"quality",files,renderInbound)} function removeInboundQualityPhoto(i){currentInbound.photos.quality.splice(i,1);renderInbound()} function addInboundWholePhotos(files){addPhotosTo(currentInbound.photos,"wholeorder",files,renderInbound)} function removeInboundWholePhoto(i){currentInbound.photos.wholeorder.splice(i,1);renderInbound()}
 
 function newExpeditie(){mode="expeditie";currentExpeditie=emptyExpeditie();renderExpeditie()} function openExpeditie(id){mode="expeditie";currentExpeditie=expedities.find(x=>x.id===id);if(!currentExpeditie.photos.trailer)currentExpeditie.photos.trailer=[];renderExpeditie()}
-function renderExpeditie(){hideAll();expeditieView.classList.remove("hidden");if(!currentExpeditie.photos.trailer)currentExpeditie.photos.trailer=[];expeditieView.innerHTML=`<div class="card"><h2>Expeditiecontrole</h2><div class="meta"><div><label>Datum/tijd</label><input readonly value="${esc(currentExpeditie.dateTime)}"></div><div><label>Binnenkomende of uitgaande vracht?</label><select onchange="currentExpeditie.vrachtType=this.value"><option value="">Kies</option><option ${currentExpeditie.vrachtType==="Binnenkomende vracht"?"selected":""}>Binnenkomende vracht</option><option ${currentExpeditie.vrachtType==="Uitgaande vracht"?"selected":""}>Uitgaande vracht</option></select></div><div><label>Zonder schade gelost of geladen?</label><select onchange="currentExpeditie.zonderSchade=this.value"><option value="">Kies</option><option ${currentExpeditie.zonderSchade==="Ja"?"selected":""}>Ja</option><option ${currentExpeditie.zonderSchade==="Nee"?"selected":""}>Nee</option></select></div></div></div><div class="section"><h2>Foto geladen trailer</h2>${photoBox(currentExpeditie.photos,"trailer","addExpeditiePhotos(this.files)","removeExpeditiePhoto(")}</div><div class="section"><h2>Opmerking</h2><textarea oninput="currentExpeditie.opmerking=this.value" placeholder="Opmerking bij schade of bijzonderheden">${esc(currentExpeditie.opmerking)}</textarea></div><div class="footer"></div>`}
+function renderExpeditie(){hideAll();expeditieView.classList.remove("hidden");if(!currentExpeditie.photos.trailer)currentExpeditie.photos.trailer=[];expeditieView.innerHTML=`<div class="card"><h2>Expeditiecontrole</h2><div class="meta"><div><label>Datum/tijd</label><input readonly value="${esc(currentExpeditie.dateTime)}"></div><div><label>Binnenkomende of uitgaande vracht?</label><select onchange="currentExpeditie.vrachtType=this.value"><option value="">Kies</option><option ${currentExpeditie.vrachtType==="Binnenkomende vracht"?"selected":""}>Binnenkomende vracht</option><option ${currentExpeditie.vrachtType==="Uitgaande vracht"?"selected":""}>Uitgaande vracht</option></select></div><div><label>Zonder schade gelost of geladen?</label><select onchange="currentExpeditie.zonderSchade=this.value"><option value="">Kies</option><option ${currentExpeditie.zonderSchade==="Ja"?"selected":""}>Ja</option><option ${currentExpeditie.zonderSchade==="Nee"?"selected":""}>Nee</option></select></div></div></div><div class="section"><h2>Foto geladen trailer</h2>${photoBox(currentExpeditie.photos,"trailer","addExpeditiePhotos(this.files)","removeExpeditiePhoto(")}</div><div class="section"><h2>Opmerking</h2><textarea oninput="currentExpeditie.opmerking=this.value" placeholder="Opmerking bij schade of bijzonderheden">${esc(currentExpeditie.opmerking)}</textarea></div><div class="footer"><button class="green" onclick="saveExpeditie()">Opslaan</button> <button class="orange" onclick="pdfExpeditie()">PDF</button></div>`}
 function addExpeditiePhotos(files){addPhotosTo(currentExpeditie.photos,"trailer",files,renderExpeditie)} function removeExpeditiePhoto(i){currentExpeditie.photos.trailer.splice(i,1);renderExpeditie()}
 
-async function saveHandover(){let row={datum_tijd:currentHandover.dateTime,overdragende_teamleider:currentHandover.handoverLeader,ontvangende_teamleider:currentHandover.receivingLeader,checklist_data:currentHandover.items,five_s_data:currentHandover.fiveS,photos:currentHandover.photos,status:"Opgeslagen"};let r=currentHandover.id?await supabaseClient.from("overdrachten").update(row).eq("id",currentHandover.id).select().single():await supabaseClient.from("overdrachten").insert(row).select().single();if(r.error)return alert(r.error.message);currentHandover.id=r.data.id;alert("Opgeslagen");await loadData()}
-async function saveInbound(){if(!currentInbound.orderNumber.trim())return alert("Ordernummer is verplicht");let row={datum_tijd:currentInbound.dateTime,ordernummer:currentInbound.orderNumber,controleur:currentInbound.controller,checklist_data:currentInbound.items,photos:currentInbound.photos,status:"Opgeslagen"};let r=currentInbound.id?await supabaseClient.from("ingangscontroles").update(row).eq("id",currentInbound.id).select().single():await supabaseClient.from("ingangscontroles").insert(row).select().single();if(r.error)return alert(r.error.message);currentInbound.id=r.data.id;alert("Opgeslagen");await loadData()}
-async function saveExpeditie(){if(!currentExpeditie.vrachtType)return alert("Kies vracht type");if(!currentExpeditie.zonderSchade)return alert("Kies zonder schade ja/nee");let row={datum_tijd:currentExpeditie.dateTime,vracht_type:currentExpeditie.vrachtType,zonder_schade:currentExpeditie.zonderSchade,opmerking:currentExpeditie.opmerking,photos:currentExpeditie.photos,status:"Opgeslagen"};let r=currentExpeditie.id?await supabaseClient.from("expeditiecontroles").update(row).eq("id",currentExpeditie.id).select().single():await supabaseClient.from("expeditiecontroles").insert(row).select().single();if(r.error)return alert(r.error.message);currentExpeditie.id=r.data.id;alert("Opgeslagen");await loadData()}
+async function saveHandover(){let row={datum_tijd:currentHandover.dateTime,overdragende_teamleider:currentHandover.handoverLeader,ontvangende_teamleider:currentHandover.receivingLeader,checklist_data:currentHandover.items,five_s_data:currentHandover.fiveS,photos:currentHandover.photos,status:"Opgeslagen",created_by:currentUser?.username||""};let r=currentHandover.id?await supabaseClient.from("overdrachten").update(row).eq("id",currentHandover.id).select().single():await supabaseClient.from("overdrachten").insert(row).select().single();if(r.error)return alert(r.error.message);currentHandover.id=r.data.id;alert("Opgeslagen");await loadData()}
+async function saveInbound(){if(!currentInbound.orderNumber.trim())return alert("Ordernummer is verplicht");let row={datum_tijd:currentInbound.dateTime,ordernummer:currentInbound.orderNumber,controleur:currentInbound.controller,checklist_data:currentInbound.items,photos:currentInbound.photos,status:"Opgeslagen",created_by:currentUser?.username||""};let r=currentInbound.id?await supabaseClient.from("ingangscontroles").update(row).eq("id",currentInbound.id).select().single():await supabaseClient.from("ingangscontroles").insert(row).select().single();if(r.error)return alert(r.error.message);currentInbound.id=r.data.id;alert("Opgeslagen");await loadData()}
+async function saveExpeditie(){if(!currentExpeditie.vrachtType)return alert("Kies vracht type");if(!currentExpeditie.zonderSchade)return alert("Kies zonder schade ja/nee");let row={datum_tijd:currentExpeditie.dateTime,vracht_type:currentExpeditie.vrachtType,zonder_schade:currentExpeditie.zonderSchade,opmerking:currentExpeditie.opmerking,photos:currentExpeditie.photos,status:"Opgeslagen",created_by:currentUser?.username||""};let r=currentExpeditie.id?await supabaseClient.from("expeditiecontroles").update(row).eq("id",currentExpeditie.id).select().single():await supabaseClient.from("expeditiecontroles").insert(row).select().single();if(r.error)return alert(r.error.message);currentExpeditie.id=r.data.id;alert("Opgeslagen");await loadData()}
 function saveCurrent(){if(mode==="expeditie")saveExpeditie();else if(mode==="inbound")saveInbound();else if(currentHandover)saveHandover();else alert("Open eerst iets")}
 
 function reportWindow(title,body){let w=window.open("","_blank");if(!w)return alert("Sta pop-ups toe");w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial;font-size:12px;color:#111}h1{color:#002b5c;border-bottom:4px solid #002b5c;padding-bottom:10px}h2{color:#002b5c}.meta,.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.box,.section{border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin-bottom:12px;break-inside:avoid}.check{display:inline-flex;width:17px;height:17px;border:1.5px solid #002b5c;align-items:center;justify-content:center;margin-right:8px;font-weight:bold}.item{border-bottom:1px solid #e5e7eb;padding:7px 0}.comment{margin:6px 0 0 25px;background:#f8fafc;border-left:3px solid #0057b8;padding:8px;white-space:pre-wrap}.photos{display:grid;grid-template-columns:1fr 1fr;gap:10px}.photos img{width:100%;max-height:230px;object-fit:contain;border:1px solid #cbd5e1;border-radius:8px}
@@ -170,7 +171,7 @@ function showLogin(){
     <label>Wachtwoord</label>
     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="wachtwoord">
     <button style="width:100%;margin-top:16px" onclick="login()">Inloggen</button>
-    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: login only v2</b></p>
+    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: mijn rapporten v2</b></p>
   </div>`;
 }
 
@@ -420,6 +421,81 @@ async function deleteUserFromAdmin(id, username){
 // Oude functienaam laten bestaan voor compatibiliteit
 async function createUser(){
   return saveUserFromAdmin();
+}
+
+
+async function showMyReports(){
+  if(!currentUser) return showLogin();
+
+  mode="myReports";
+  hideAll();
+  myReportsView.classList.remove("hidden");
+  myReportsView.innerHTML="<div class='card'><h2>Mijn rapporten laden...</h2></div>";
+
+  try{
+    await loadData();
+
+    const username=currentUser.username;
+    const myHandovers=handovers.filter(r=>(r.createdBy||"")===username);
+    const myInbounds=inbounds.filter(r=>(r.createdBy||"")===username);
+    const myExpedities=expedities.filter(r=>(r.createdBy||"")===username);
+
+    window.__myReports={
+      overdracht:myHandovers,
+      ingang:myInbounds,
+      expeditie:myExpedities
+    };
+
+    myReportsView.innerHTML=`
+    <div class="card">
+      <h2>Mijn rapporten</h2>
+      <p>Hier zie je alleen de rapporten die zijn opgeslagen door: <b>${esc(currentUser.display_name||currentUser.username)}</b></p>
+      <p style="color:#64748b;font-size:13px;">Let op: oude rapporten van vóór deze update hebben nog geen gebruiker gekoppeld.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="renderMyReportsTab('overdracht')">Overdrachten (${myHandovers.length})</button>
+      <button class="tab" onclick="renderMyReportsTab('ingang')">Ingang (${myInbounds.length})</button>
+      <button class="tab" onclick="renderMyReportsTab('expeditie')">Expeditie (${myExpedities.length})</button>
+    </div>
+
+    <div class="card">
+      <div id="myReportsTable"></div>
+    </div>`;
+
+    renderMyReportsTab('overdracht');
+
+  }catch(e){
+    myReportsView.innerHTML=`<div class="error"><b>Fout:</b> ${esc(e.message)}</div>`;
+  }
+}
+
+function renderMyReportsTab(tab){
+  const rows=(window.__myReports||{})[tab]||[];
+  const labels={overdracht:"Overdrachten",ingang:"Ingangscontrole",expeditie:"Expeditiecontrole"};
+
+  if(!rows.length){
+    myReportsTable.innerHTML=`<h2>${labels[tab]}</h2><p>Geen eigen rapporten gevonden.</p>`;
+    return;
+  }
+
+  if(tab==="overdracht"){
+    myReportsTable.innerHTML=`<h2>Mijn overdrachten</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Overdragend</th><th>Ontvangend</th><th>Checklist</th><th>5S</th><th>Acties</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td>${r.items.filter(x=>x.checked).length}/${r.items.length}</td><td>${r.fiveS.filter(x=>x.checked).length}/${r.fiveS.length}</td><td><button onclick="openHandover('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverById('${r.id}')">PDF</button></td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
+
+  if(tab==="ingang"){
+    myReportsTable.innerHTML=`<h2>Mijn ingangscontroles</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Order</th><th>Controleur</th><th>Checklist</th><th>Acties</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.orderNumber||"-")}</td><td>${esc(r.controller||"-")}</td><td>${r.items.filter(x=>x.checked).length}/${r.items.length}</td><td><button onclick="openInbound('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundById('${r.id}')">PDF</button></td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
+
+  if(tab==="expeditie"){
+    myReportsTable.innerHTML=`<h2>Mijn expeditiecontroles</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Vracht</th><th>Zonder schade</th><th>Acties</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td><button onclick="openExpeditie('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieById('${r.id}')">PDF</button></td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
 }
 
 function boot(){
