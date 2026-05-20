@@ -19,3 +19,11 @@ MIJN RAPPORTEN V2:
 - Werkt voor Overdracht, Ingangscontrole en Expeditiecontrole.
 - Nieuwe kolom created_by wordt toegevoegd via supabase-setup.sql.
 - Loginpagina toont: Versie: mijn rapporten v2
+
+
+TIMEOUT FIX MIJN RAPPORTEN V4:
+- Mijn rapporten haalt niet meer alle rapporten + foto's op.
+- Alleen eigen rapporten worden opgehaald via created_by.
+- Lijst toont alleen lichte data.
+- Volledige data/foto's worden pas geladen bij Open of PDF.
+- Indexen toegevoegd in supabase-setup.sql voor created_by + created_at.

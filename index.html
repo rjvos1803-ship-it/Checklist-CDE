@@ -117,16 +117,16 @@ function photoBox(obj,key,add,remove){if(!obj[key])obj[key]=[];return `<div clas
 function addPhotosTo(obj,key,files,cb){if(!obj[key])obj[key]=[];Array.from(files).forEach(f=>{let r=new FileReader();r.onload=e=>{obj[key].push(e.target.result);cb()};r.readAsDataURL(f)})}
 
 function newHandover(){mode="handover";currentHandover=emptyHandover();renderHandover()} function openHandover(id){mode="handover";currentHandover=handovers.find(x=>x.id===id);renderHandover()}
-function renderHandover(){hideAll();handoverView.classList.remove("hidden");let done=currentHandover.items.filter(i=>i.checked).length,total=currentHandover.items.length;let html=`<div class="card"><h2>Ploegenoverdracht</h2><p>${done}/${total}</p><div class="progressbar"><div style="width:${Math.round(done/total*100)}%"></div></div></div>`;checklistTemplate.forEach((s,si)=>{html+=`<div class="section"><h2>${si+1}. ${s.title}</h2>`;s.items.forEach((label,ii)=>{let it=currentHandover.items.find(x=>x.section===si&&x.index===ii)||{checked:false,comment:""};html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).checked=this.checked"><b>${esc(label)}</b></div><textarea placeholder="Opmerking" oninput="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).comment=this.value">${esc(it.comment)}</textarea></div>`});if(si===1||si===5)html+=photoBox(currentHandover.photos,String(si+1),`addHandoverPhotos(${si+1},this.files)`,`removeHandoverPhoto(${si+1},`);html+=`</div>`});html+=`<div class="footer"><h2>Ondertekening</h2><div class="meta"><div><label>Overdragende teamleider</label><input value="${esc(currentHandover.handoverLeader)}" oninput="currentHandover.handoverLeader=this.value"></div><div><label>Ontvangende teamleider</label><input value="${esc(currentHandover.receivingLeader)}" oninput="currentHandover.receivingLeader=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentHandover.dateTime)}"></div></div><br><button class="green" onclick="saveHandover()">Opslaan</button> <button onclick="showFiveS()">5S</button> <button class="orange" onclick="pdfHandover()">PDF</button></div>`;handoverView.innerHTML=html}
+function renderHandover(){hideAll();handoverView.classList.remove("hidden");let done=currentHandover.items.filter(i=>i.checked).length,total=currentHandover.items.length;let html=`<div class="card"><h2>Ploegenoverdracht</h2><p>${done}/${total}</p><div class="progressbar"><div style="width:${Math.round(done/total*100)}%"></div></div></div>`;checklistTemplate.forEach((s,si)=>{html+=`<div class="section"><h2>${si+1}. ${s.title}</h2>`;s.items.forEach((label,ii)=>{let it=currentHandover.items.find(x=>x.section===si&&x.index===ii)||{checked:false,comment:""};html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).checked=this.checked"><b>${esc(label)}</b></div><textarea placeholder="Opmerking" oninput="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).comment=this.value">${esc(it.comment)}</textarea></div>`});if(si===1||si===5)html+=photoBox(currentHandover.photos,String(si+1),`addHandoverPhotos(${si+1},this.files)`,`removeHandoverPhoto(${si+1},`);html+=`</div>`});html+=`<div class="footer"><h2>Ondertekening</h2><div class="meta"><div><label>Overdragende teamleider</label><input value="${esc(currentHandover.handoverLeader)}" oninput="currentHandover.handoverLeader=this.value"></div><div><label>Ontvangende teamleider</label><input value="${esc(currentHandover.receivingLeader)}" oninput="currentHandover.receivingLeader=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentHandover.dateTime)}"></div></div><br> <button onclick="showFiveS()">5S</button> </div>`;handoverView.innerHTML=html}
 function addHandoverPhotos(sec,files){addPhotosTo(currentHandover.photos,String(sec),files,renderHandover)} function removeHandoverPhoto(sec,i){currentHandover.photos[String(sec)].splice(i,1);renderHandover()}
-function showFiveS(){if(!currentHandover)return alert("Open eerst een overdracht");mode="fiveS";hideAll();fiveSView.classList.remove("hidden");fiveSView.innerHTML=`<div class="section"><h2>5S Checklist</h2><div class="five-grid">${currentHandover.fiveS.map((it,i)=>`<div class="five-item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.fiveS[${i}].checked=this.checked;showFiveS()"><b>${esc(it.label)}</b></div></div>`).join("")}</div></div><div class="footer"><button class="green" onclick="saveHandover()">Opslaan</button> <button onclick="renderHandover()">Terug</button></div>`}
+function showFiveS(){if(!currentHandover)return alert("Open eerst een overdracht");mode="fiveS";hideAll();fiveSView.classList.remove("hidden");fiveSView.innerHTML=`<div class="section"><h2>5S Checklist</h2><div class="five-grid">${currentHandover.fiveS.map((it,i)=>`<div class="five-item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.fiveS[${i}].checked=this.checked;showFiveS()"><b>${esc(it.label)}</b></div></div>`).join("")}</div></div><div class="footer"> <button onclick="renderHandover()">Terug</button></div>`}
 
 function newInbound(){mode="inbound";currentInbound=emptyInbound();renderInbound()} function openInbound(id){mode="inbound";currentInbound=inbounds.find(x=>x.id===id);if(!currentInbound.photos.quality)currentInbound.photos.quality=[];if(!currentInbound.photos.wholeorder)currentInbound.photos.wholeorder=[];renderInbound()}
-function renderInbound(){hideAll();inboundView.classList.remove("hidden");if(!currentInbound.photos.quality)currentInbound.photos.quality=[];if(!currentInbound.photos.wholeorder)currentInbound.photos.wholeorder=[];let html=`<div class="card"><h2>Ingangscontrole</h2><div class="meta"><div><label>Ordernummer verplicht</label><input value="${esc(currentInbound.orderNumber)}" oninput="currentInbound.orderNumber=this.value"></div><div><label>Controleur</label><input value="${esc(currentInbound.controller)}" oninput="currentInbound.controller=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentInbound.dateTime)}"></div></div></div><div class="section">`;currentInbound.items.forEach((it,i)=>{html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentInbound.items[${i}].checked=this.checked"><b>${esc(it.label)}</b></div><textarea placeholder="${esc(it.commentLabel)}" oninput="currentInbound.items[${i}].comment=this.value">${esc(it.comment)}</textarea>${it.key==="quality"?photoBox(currentInbound.photos,"quality","addInboundQualityPhotos(this.files)","removeInboundQualityPhoto("):""}${it.key==="wholeorder"?photoBox(currentInbound.photos,"wholeorder","addInboundWholePhotos(this.files)","removeInboundWholePhoto("):""}</div>`});html+=`</div><div class="footer"><button class="green" onclick="saveInbound()">Opslaan</button> <button class="orange" onclick="pdfInbound()">PDF</button></div>`;inboundView.innerHTML=html}
+function renderInbound(){hideAll();inboundView.classList.remove("hidden");if(!currentInbound.photos.quality)currentInbound.photos.quality=[];if(!currentInbound.photos.wholeorder)currentInbound.photos.wholeorder=[];let html=`<div class="card"><h2>Ingangscontrole</h2><div class="meta"><div><label>Ordernummer verplicht</label><input value="${esc(currentInbound.orderNumber)}" oninput="currentInbound.orderNumber=this.value"></div><div><label>Controleur</label><input value="${esc(currentInbound.controller)}" oninput="currentInbound.controller=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentInbound.dateTime)}"></div></div></div><div class="section">`;currentInbound.items.forEach((it,i)=>{html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentInbound.items[${i}].checked=this.checked"><b>${esc(it.label)}</b></div><textarea placeholder="${esc(it.commentLabel)}" oninput="currentInbound.items[${i}].comment=this.value">${esc(it.comment)}</textarea>${it.key==="quality"?photoBox(currentInbound.photos,"quality","addInboundQualityPhotos(this.files)","removeInboundQualityPhoto("):""}${it.key==="wholeorder"?photoBox(currentInbound.photos,"wholeorder","addInboundWholePhotos(this.files)","removeInboundWholePhoto("):""}</div>`});html+=`</div><div class="footer"> </div>`;inboundView.innerHTML=html}
 function addInboundQualityPhotos(files){addPhotosTo(currentInbound.photos,"quality",files,renderInbound)} function removeInboundQualityPhoto(i){currentInbound.photos.quality.splice(i,1);renderInbound()} function addInboundWholePhotos(files){addPhotosTo(currentInbound.photos,"wholeorder",files,renderInbound)} function removeInboundWholePhoto(i){currentInbound.photos.wholeorder.splice(i,1);renderInbound()}
 
 function newExpeditie(){mode="expeditie";currentExpeditie=emptyExpeditie();renderExpeditie()} function openExpeditie(id){mode="expeditie";currentExpeditie=expedities.find(x=>x.id===id);if(!currentExpeditie.photos.trailer)currentExpeditie.photos.trailer=[];renderExpeditie()}
-function renderExpeditie(){hideAll();expeditieView.classList.remove("hidden");if(!currentExpeditie.photos.trailer)currentExpeditie.photos.trailer=[];expeditieView.innerHTML=`<div class="card"><h2>Expeditiecontrole</h2><div class="meta"><div><label>Datum/tijd</label><input readonly value="${esc(currentExpeditie.dateTime)}"></div><div><label>Binnenkomende of uitgaande vracht?</label><select onchange="currentExpeditie.vrachtType=this.value"><option value="">Kies</option><option ${currentExpeditie.vrachtType==="Binnenkomende vracht"?"selected":""}>Binnenkomende vracht</option><option ${currentExpeditie.vrachtType==="Uitgaande vracht"?"selected":""}>Uitgaande vracht</option></select></div><div><label>Zonder schade gelost of geladen?</label><select onchange="currentExpeditie.zonderSchade=this.value"><option value="">Kies</option><option ${currentExpeditie.zonderSchade==="Ja"?"selected":""}>Ja</option><option ${currentExpeditie.zonderSchade==="Nee"?"selected":""}>Nee</option></select></div></div></div><div class="section"><h2>Foto geladen trailer</h2>${photoBox(currentExpeditie.photos,"trailer","addExpeditiePhotos(this.files)","removeExpeditiePhoto(")}</div><div class="section"><h2>Opmerking</h2><textarea oninput="currentExpeditie.opmerking=this.value" placeholder="Opmerking bij schade of bijzonderheden">${esc(currentExpeditie.opmerking)}</textarea></div><div class="footer"><button class="green" onclick="saveExpeditie()">Opslaan</button> <button class="orange" onclick="pdfExpeditie()">PDF</button></div>`}
+function renderExpeditie(){hideAll();expeditieView.classList.remove("hidden");if(!currentExpeditie.photos.trailer)currentExpeditie.photos.trailer=[];expeditieView.innerHTML=`<div class="card"><h2>Expeditiecontrole</h2><div class="meta"><div><label>Datum/tijd</label><input readonly value="${esc(currentExpeditie.dateTime)}"></div><div><label>Binnenkomende of uitgaande vracht?</label><select onchange="currentExpeditie.vrachtType=this.value"><option value="">Kies</option><option ${currentExpeditie.vrachtType==="Binnenkomende vracht"?"selected":""}>Binnenkomende vracht</option><option ${currentExpeditie.vrachtType==="Uitgaande vracht"?"selected":""}>Uitgaande vracht</option></select></div><div><label>Zonder schade gelost of geladen?</label><select onchange="currentExpeditie.zonderSchade=this.value"><option value="">Kies</option><option ${currentExpeditie.zonderSchade==="Ja"?"selected":""}>Ja</option><option ${currentExpeditie.zonderSchade==="Nee"?"selected":""}>Nee</option></select></div></div></div><div class="section"><h2>Foto geladen trailer</h2>${photoBox(currentExpeditie.photos,"trailer","addExpeditiePhotos(this.files)","removeExpeditiePhoto(")}</div><div class="section"><h2>Opmerking</h2><textarea oninput="currentExpeditie.opmerking=this.value" placeholder="Opmerking bij schade of bijzonderheden">${esc(currentExpeditie.opmerking)}</textarea></div><div class="footer"> </div>`}
 function addExpeditiePhotos(files){addPhotosTo(currentExpeditie.photos,"trailer",files,renderExpeditie)} function removeExpeditiePhoto(i){currentExpeditie.photos.trailer.splice(i,1);renderExpeditie()}
 
 async function saveHandover(){let row={datum_tijd:currentHandover.dateTime,overdragende_teamleider:currentHandover.handoverLeader,ontvangende_teamleider:currentHandover.receivingLeader,checklist_data:currentHandover.items,five_s_data:currentHandover.fiveS,photos:currentHandover.photos,status:"Opgeslagen",created_by:currentUser?.username||""};let r=currentHandover.id?await supabaseClient.from("overdrachten").update(row).eq("id",currentHandover.id).select().single():await supabaseClient.from("overdrachten").insert(row).select().single();if(r.error)return alert(r.error.message);currentHandover.id=r.data.id;alert("Opgeslagen");await loadData()}
@@ -171,7 +171,7 @@ function showLogin(){
     <label>Wachtwoord</label>
     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="wachtwoord">
     <button style="width:100%;margin-top:16px" onclick="login()">Inloggen</button>
-    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: mijn rapporten v2</b></p>
+    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: mijn rapporten v4 timeout fix</b></p>
   </div>`;
 }
 
@@ -424,33 +424,78 @@ async function createUser(){
 }
 
 
+
 async function showMyReports(){
   if(!currentUser) return showLogin();
 
   mode="myReports";
   hideAll();
   myReportsView.classList.remove("hidden");
-  myReportsView.innerHTML="<div class='card'><h2>Mijn rapporten laden...</h2></div>";
+  myReportsView.innerHTML="<div class='card'><h2>Mijn rapporten laden...</h2><p>Alleen jouw eigen rapporten worden opgehaald.</p></div>";
 
   try{
-    await loadData();
-
     const username=currentUser.username;
-    const myHandovers=handovers.filter(r=>(r.createdBy||"")===username);
-    const myInbounds=inbounds.filter(r=>(r.createdBy||"")===username);
-    const myExpedities=expedities.filter(r=>(r.createdBy||"")===username);
+
+    const h=await supabaseClient
+      .from("overdrachten")
+      .select("id,created_at,datum_tijd,overdragende_teamleider,ontvangende_teamleider,created_by")
+      .eq("created_by",username)
+      .order("created_at",{ascending:false})
+      .limit(100);
+
+    if(h.error) throw h.error;
+
+    const i=await supabaseClient
+      .from("ingangscontroles")
+      .select("id,created_at,datum_tijd,ordernummer,controleur,created_by")
+      .eq("created_by",username)
+      .order("created_at",{ascending:false})
+      .limit(100);
+
+    if(i.error) throw i.error;
+
+    const e=await supabaseClient
+      .from("expeditiecontroles")
+      .select("id,created_at,datum_tijd,vracht_type,zonder_schade,created_by")
+      .eq("created_by",username)
+      .order("created_at",{ascending:false})
+      .limit(100);
+
+    if(e.error) throw e.error;
 
     window.__myReports={
-      overdracht:myHandovers,
-      ingang:myInbounds,
-      expeditie:myExpedities
+      overdracht:(h.data||[]).map(r=>({
+        id:r.id,
+        dateTime:r.datum_tijd||"",
+        handoverLeader:r.overdragende_teamleider||"",
+        receivingLeader:r.ontvangende_teamleider||"",
+        createdBy:r.created_by||""
+      })),
+      ingang:(i.data||[]).map(r=>({
+        id:r.id,
+        dateTime:r.datum_tijd||"",
+        orderNumber:r.ordernummer||"",
+        controller:r.controleur||"",
+        createdBy:r.created_by||""
+      })),
+      expeditie:(e.data||[]).map(r=>({
+        id:r.id,
+        dateTime:r.datum_tijd||"",
+        vrachtType:r.vracht_type||"",
+        zonderSchade:r.zonder_schade||"",
+        createdBy:r.created_by||""
+      }))
     };
+
+    const myHandovers=window.__myReports.overdracht;
+    const myInbounds=window.__myReports.ingang;
+    const myExpedities=window.__myReports.expeditie;
 
     myReportsView.innerHTML=`
     <div class="card">
       <h2>Mijn rapporten</h2>
       <p>Hier zie je alleen de rapporten die zijn opgeslagen door: <b>${esc(currentUser.display_name||currentUser.username)}</b></p>
-      <p style="color:#64748b;font-size:13px;">Let op: oude rapporten van vóór deze update hebben nog geen gebruiker gekoppeld.</p>
+      <p style="color:#64748b;font-size:13px;">Bij openen of PDF wordt het volledige rapport met foto’s pas geladen.</p>
     </div>
 
     <div class="tabs">
@@ -466,7 +511,7 @@ async function showMyReports(){
     renderMyReportsTab('overdracht');
 
   }catch(e){
-    myReportsView.innerHTML=`<div class="error"><b>Fout:</b> ${esc(e.message)}</div>`;
+    myReportsView.innerHTML=`<div class="error"><b>Fout bij laden Mijn rapporten:</b><br>${esc(e.message)}<br><br>Voer supabase-setup.sql opnieuw uit zodat de indexen en created_by kolommen bestaan.</div>`;
   }
 }
 
@@ -480,22 +525,86 @@ function renderMyReportsTab(tab){
   }
 
   if(tab==="overdracht"){
-    myReportsTable.innerHTML=`<h2>Mijn overdrachten</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Overdragend</th><th>Ontvangend</th><th>Checklist</th><th>5S</th><th>Acties</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td>${r.items.filter(x=>x.checked).length}/${r.items.length}</td><td>${r.fiveS.filter(x=>x.checked).length}/${r.fiveS.length}</td><td><button onclick="openHandover('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverById('${r.id}')">PDF</button></td></tr>`).join("")}
+    myReportsTable.innerHTML=`<h2>Mijn overdrachten</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Overdragend</th><th>Ontvangend</th><th>Acties</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td><button onclick="openHandoverFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverFromDb('${r.id}')">PDF</button></td></tr>`).join("")}
     </tbody></table></div>`;
   }
 
   if(tab==="ingang"){
-    myReportsTable.innerHTML=`<h2>Mijn ingangscontroles</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Order</th><th>Controleur</th><th>Checklist</th><th>Acties</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.orderNumber||"-")}</td><td>${esc(r.controller||"-")}</td><td>${r.items.filter(x=>x.checked).length}/${r.items.length}</td><td><button onclick="openInbound('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundById('${r.id}')">PDF</button></td></tr>`).join("")}
+    myReportsTable.innerHTML=`<h2>Mijn ingangscontroles</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Order</th><th>Controleur</th><th>Acties</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.orderNumber||"-")}</td><td>${esc(r.controller||"-")}</td><td><button onclick="openInboundFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundFromDb('${r.id}')">PDF</button></td></tr>`).join("")}
     </tbody></table></div>`;
   }
 
   if(tab==="expeditie"){
     myReportsTable.innerHTML=`<h2>Mijn expeditiecontroles</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Vracht</th><th>Zonder schade</th><th>Acties</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td><button onclick="openExpeditie('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieById('${r.id}')">PDF</button></td></tr>`).join("")}
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td><button onclick="openExpeditieFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieFromDb('${r.id}')">PDF</button></td></tr>`).join("")}
     </tbody></table></div>`;
   }
+}
+
+async function openHandoverFromDb(id){
+  const {data,error}=await supabaseClient.from("overdrachten").select("*").eq("id",id).single();
+  if(error) return alert("Openen mislukt: "+error.message);
+  currentHandover={
+    id:data.id,
+    dateTime:data.datum_tijd||"",
+    handoverLeader:data.overdragende_teamleider||"",
+    receivingLeader:data.ontvangende_teamleider||"",
+    items:data.checklist_data||[],
+    fiveS:data.five_s_data||[],
+    photos:data.photos||{"2":[],"6":[]},
+    createdBy:data.created_by||""
+  };
+  mode="handover";
+  renderHandover();
+}
+
+async function openInboundFromDb(id){
+  const {data,error}=await supabaseClient.from("ingangscontroles").select("*").eq("id",id).single();
+  if(error) return alert("Openen mislukt: "+error.message);
+  currentInbound={
+    id:data.id,
+    dateTime:data.datum_tijd||"",
+    orderNumber:data.ordernummer||"",
+    controller:data.controleur||"",
+    items:data.checklist_data||[],
+    photos:data.photos||{quality:[],wholeorder:[]},
+    createdBy:data.created_by||""
+  };
+  mode="inbound";
+  renderInbound();
+}
+
+async function openExpeditieFromDb(id){
+  const {data,error}=await supabaseClient.from("expeditiecontroles").select("*").eq("id",id).single();
+  if(error) return alert("Openen mislukt: "+error.message);
+  currentExpeditie={
+    id:data.id,
+    dateTime:data.datum_tijd||"",
+    vrachtType:data.vracht_type||"",
+    zonderSchade:data.zonder_schade||"",
+    opmerking:data.opmerking||"",
+    photos:data.photos||{trailer:[]},
+    createdBy:data.created_by||""
+  };
+  mode="expeditie";
+  renderExpeditie();
+}
+
+async function pdfHandoverFromDb(id){
+  await openHandoverFromDb(id);
+  pdfHandover();
+}
+
+async function pdfInboundFromDb(id){
+  await openInboundFromDb(id);
+  pdfInbound();
+}
+
+async function pdfExpeditieFromDb(id){
+  await openExpeditieFromDb(id);
+  pdfExpeditie();
 }
 
 function boot(){
