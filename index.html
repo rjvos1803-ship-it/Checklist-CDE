@@ -114,7 +114,73 @@ function filterDash(tab){let rows=[...rowsFor(tab)],f=fFrom.value,t=fTo.value,w=
 function renderDashTable(tab,rows){if(!rows.length){dashTable.innerHTML="<p>Geen resultaten.</p>";return}let head="",body="";if(tab==="overdracht"){head="<th>Datum</th><th>Week</th><th>Overdragend</th><th>Ontvangend</th><th>Checklist</th><th>5S</th><th>Foto's</th><th>Acties</th>";body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td>${r.items.filter(x=>x.checked).length}/${r.items.length}</td><td>${r.fiveS.filter(x=>x.checked).length}/${r.fiveS.length}</td><td>${thumbs(r)}</td><td><button onclick="openHandover('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverById('${r.id}')">PDF</button></td></tr>`).join("")}else if(tab==="ingang"){head="<th>Datum</th><th>Week</th><th>Order</th><th>Controleur</th><th>Checklist</th><th>Foto's</th><th>Acties</th>";body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.orderNumber)}</td><td>${esc(r.controller||"-")}</td><td>${r.items.filter(x=>x.checked).length}/${r.items.length}</td><td>${thumbs(r)}</td><td><button onclick="openInbound('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundById('${r.id}')">PDF</button></td></tr>`).join("")}else{head="<th>Datum</th><th>Week</th><th>Vracht</th><th>Zonder schade</th><th>Foto's</th><th>Acties</th>";body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td>${thumbs(r)}</td><td><button onclick="openExpeditie('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieById('${r.id}')">PDF</button></td></tr>`).join("")}dashTable.innerHTML=`<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`}
 
 function photoBox(obj,key,add,remove){if(!obj[key])obj[key]=[];return `<div class="photo-box"><div style="display:flex;gap:10px;flex-wrap:wrap"><label class="btnlabel">Foto maken<input style="display:none" type="file" accept="image/*" capture="environment" multiple onchange="${add}"></label><label class="btnlabel secondary">Foto uit album<input style="display:none" type="file" accept="image/*" multiple onchange="${add}"></label></div><div class="photo-grid">${obj[key].map((p,i)=>`<div class="photo"><img src="${p}" onclick="openPhoto('${p}')"><button onclick="${remove}${i})">x</button></div>`).join("")}</div></div>`}
-function addPhotosTo(obj,key,files,cb){if(!obj[key])obj[key]=[];Array.from(files).forEach(f=>{let r=new FileReader();r.onload=e=>{obj[key].push(e.target.result);cb()};r.readAsDataURL(f)})}
+
+async function compressImageToMax100KB(file){
+  const maxBytes = 100 * 1024;
+  const image = new Image();
+
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  let width = image.width;
+  let height = image.height;
+  let quality = 0.82;
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  async function render(){
+    canvas.width = width;
+    canvas.height = height;
+    ctx.clearRect(0,0,width,height);
+    ctx.drawImage(image,0,0,width,height);
+    return canvas.toDataURL("image/jpeg", quality);
+  }
+
+  let output = await render();
+
+  // Eerst kwaliteit omlaag
+  while(output.length * 0.75 > maxBytes && quality > 0.35){
+    quality -= 0.08;
+    output = await render();
+  }
+
+  // Daarna afmetingen omlaag indien nodig
+  while(output.length * 0.75 > maxBytes && width > 640){
+    width = Math.round(width * 0.85);
+    height = Math.round(height * 0.85);
+    quality = Math.max(0.35, quality);
+    output = await render();
+  }
+
+  return output;
+}
+
+async function addPhotosTo(obj,key,files,cb){
+  if(!obj[key]) obj[key]=[];
+
+  const fileList = Array.from(files);
+  for(const file of fileList){
+    try{
+      const compressed = await compressImageToMax100KB(file);
+      obj[key].push(compressed);
+    }catch(e){
+      alert("Foto comprimeren mislukt: " + e.message);
+    }
+  }
+
+  cb();
+}
 
 function newHandover(){mode="handover";currentHandover=emptyHandover();renderHandover()} function openHandover(id){mode="handover";currentHandover=handovers.find(x=>x.id===id);renderHandover()}
 function renderHandover(){hideAll();handoverView.classList.remove("hidden");let done=currentHandover.items.filter(i=>i.checked).length,total=currentHandover.items.length;let html=`<div class="card"><h2>Ploegenoverdracht</h2><p>${done}/${total}</p><div class="progressbar"><div style="width:${Math.round(done/total*100)}%"></div></div></div>`;checklistTemplate.forEach((s,si)=>{html+=`<div class="section"><h2>${si+1}. ${s.title}</h2>`;s.items.forEach((label,ii)=>{let it=currentHandover.items.find(x=>x.section===si&&x.index===ii)||{checked:false,comment:""};html+=`<div class="item"><div class="row"><input type="checkbox" ${it.checked?"checked":""} onchange="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).checked=this.checked"><b>${esc(label)}</b></div><textarea placeholder="Opmerking" oninput="currentHandover.items.find(x=>x.section===${si}&&x.index===${ii}).comment=this.value">${esc(it.comment)}</textarea></div>`});if(si===1||si===5)html+=photoBox(currentHandover.photos,String(si+1),`addHandoverPhotos(${si+1},this.files)`,`removeHandoverPhoto(${si+1},`);html+=`</div>`});html+=`<div class="footer"><h2>Ondertekening</h2><div class="meta"><div><label>Overdragende teamleider</label><input value="${esc(currentHandover.handoverLeader)}" oninput="currentHandover.handoverLeader=this.value"></div><div><label>Ontvangende teamleider</label><input value="${esc(currentHandover.receivingLeader)}" oninput="currentHandover.receivingLeader=this.value"></div><div><label>Datum/tijd</label><input readonly value="${esc(currentHandover.dateTime)}"></div></div><br> <button onclick="showFiveS()">5S</button> </div>`;handoverView.innerHTML=html}
@@ -171,7 +237,7 @@ function showLogin(){
     <label>Wachtwoord</label>
     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="wachtwoord">
     <button style="width:100%;margin-top:16px" onclick="login()">Inloggen</button>
-    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: mijn rapporten v4 timeout fix</b></p>
+    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: foto compressie 100kb v1</b></p>
   </div>`;
 }
 

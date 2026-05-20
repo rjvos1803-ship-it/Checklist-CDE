@@ -27,3 +27,9 @@ TIMEOUT FIX MIJN RAPPORTEN V4:
 - Lijst toont alleen lichte data.
 - Volledige data/foto's worden pas geladen bij Open of PDF.
 - Indexen toegevoegd in supabase-setup.sql voor created_by + created_at.
+
+
+FOTO COMPRESSIE:
+- Foto's worden automatisch omgezet naar JPEG.
+- Foto's worden verkleind/gecomprimeerd tot ongeveer maximaal 100 KB per foto.
+- Dit voorkomt Supabase timeouts en houdt rapporten sneller.
