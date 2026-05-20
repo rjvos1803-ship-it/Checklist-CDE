@@ -98,20 +98,78 @@ function emptyHandover(){return {id:null,dateTime:new Date().toLocaleString("nl-
 function emptyInbound(){return {id:null,dateTime:new Date().toLocaleString("nl-NL"),orderNumber:"",controller:"",photos:{quality:[],wholeorder:[]},items:inboundTemplate.map((x,i)=>({...x,index:i,checked:false,comment:""}))}}
 function emptyExpeditie(){return {id:null,dateTime:new Date().toLocaleString("nl-NL"),vrachtType:"",zonderSchade:"",opmerking:"",photos:{trailer:[]}}}
 
+
 async function loadData(){
- const h=await supabaseClient.from("overdrachten").select("*").order("created_at",{ascending:false}); if(h.error)throw h.error;
- handovers=(h.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",handoverLeader:r.overdragende_teamleider||"",receivingLeader:r.ontvangende_teamleider||"",items:r.checklist_data||[],fiveS:r.five_s_data||[],photos:r.photos||{"2":[],"6":[]},createdBy:r.created_by||""}));
- const i=await supabaseClient.from("ingangscontroles").select("*").order("created_at",{ascending:false}); if(i.error)throw i.error;
- inbounds=(i.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",orderNumber:r.ordernummer||"",controller:r.controleur||"",items:r.checklist_data||[],photos:r.photos||{quality:[],wholeorder:[]},createdBy:r.created_by||""}));
- const e=await supabaseClient.from("expeditiecontroles").select("*").order("created_at",{ascending:false}); if(e.error)throw e.error;
- expedities=(e.data||[]).map(r=>({id:r.id,dateTime:r.datum_tijd||"",vrachtType:r.vracht_type||"",zonderSchade:r.zonder_schade||"",opmerking:r.opmerking||"",photos:r.photos||{trailer:[]},createdBy:r.created_by||""}));
+ const h=await supabaseClient
+   .from("overdrachten")
+   .select("id,created_at,datum_tijd,overdragende_teamleider,ontvangende_teamleider,created_by")
+   .order("created_at",{ascending:false})
+   .limit(150);
+ if(h.error)throw h.error;
+ handovers=(h.data||[]).map(r=>({
+   id:r.id,
+   dateTime:r.datum_tijd||"",
+   handoverLeader:r.overdragende_teamleider||"",
+   receivingLeader:r.ontvangende_teamleider||"",
+   items:[],
+   fiveS:[],
+   photos:{},
+   createdBy:r.created_by||""
+ }));
+
+ const i=await supabaseClient
+   .from("ingangscontroles")
+   .select("id,created_at,datum_tijd,ordernummer,controleur,created_by")
+   .order("created_at",{ascending:false})
+   .limit(150);
+ if(i.error)throw i.error;
+ inbounds=(i.data||[]).map(r=>({
+   id:r.id,
+   dateTime:r.datum_tijd||"",
+   orderNumber:r.ordernummer||"",
+   controller:r.controleur||"",
+   items:[],
+   photos:{},
+   createdBy:r.created_by||""
+ }));
+
+ const e=await supabaseClient
+   .from("expeditiecontroles")
+   .select("id,created_at,datum_tijd,vracht_type,zonder_schade,created_by")
+   .order("created_at",{ascending:false})
+   .limit(150);
+ if(e.error)throw e.error;
+ expedities=(e.data||[]).map(r=>({
+   id:r.id,
+   dateTime:r.datum_tijd||"",
+   vrachtType:r.vracht_type||"",
+   zonderSchade:r.zonder_schade||"",
+   opmerking:"",
+   photos:{},
+   createdBy:r.created_by||""
+ }));
 }
 
 async function showDashboard(){mode="dashboard";hideAll();dashboardView.classList.remove("hidden");dashboardView.innerHTML="<div class='card'><h2>Laden...</h2></div>";try{await loadData();renderDashboard("overdracht")}catch(e){dashboardView.innerHTML=`<div class="error"><b>Fout:</b> ${esc(e.message)}<br>Run supabase-setup.sql opnieuw.</div>`}}
 function rowsFor(tab){return tab==="ingang"?inbounds:tab==="expeditie"?expedities:handovers}
-function renderDashboard(tab){const rows=rowsFor(tab);dashboardView.innerHTML=`<div class="notice"><b>Versie:</b> complete v2 met Expeditiecontrole</div><div class="tabs"><button class="tab ${tab==='overdracht'?'active':''}" onclick="renderDashboard('overdracht')">Ploegenoverdrachten</button><button class="tab ${tab==='ingang'?'active':''}" onclick="renderDashboard('ingang')">Ingangscontroles</button><button class="tab ${tab==='expeditie'?'active':''}" onclick="renderDashboard('expeditie')">Expeditie</button></div><div class="grid"><div class="stat"><small>Aantal</small><strong>${rows.length}</strong></div><div class="stat"><small>Deze week</small><strong>${rows.filter(r=>weekRec(r)===weekNo(new Date())).length}</strong></div><div class="stat"><small>Foto's</small><strong>${rows.reduce((a,r)=>a+countPhotosObj(r.photos),0)}</strong></div><div class="stat"><small>Vandaag</small><strong>${rows.filter(r=>isoDate(r)===new Date().toISOString().slice(0,10)).length}</strong></div></div><div class="card"><h2>Zoeken/filteren</h2><div class="filtergrid"><div><label>Vanaf</label><input type="date" id="fFrom" oninput="filterDash('${tab}')"></div><div><label>Tot</label><input type="date" id="fTo" oninput="filterDash('${tab}')"></div><div><label>Week</label><input type="number" id="fWeek" oninput="filterDash('${tab}')"></div><div><label>Zoeken</label><input type="text" id="fText" oninput="filterDash('${tab}')"></div><button class="secondary" onclick="renderDashboard('${tab}')">Wis</button></div></div><div class="card"><h2>${tab==='ingang'?'Ingangscontroles':tab==='expeditie'?'Expeditiecontroles':'Ploegenoverdrachten'}</h2><div id="dashTable"></div></div>`;renderDashTable(tab,rows)}
+function renderDashboard(tab){const rows=rowsFor(tab);dashboardView.innerHTML=`<div class="notice"><b>Versie:</b> complete v2 met Expeditiecontrole</div><div class="tabs"><button class="tab ${tab==='overdracht'?'active':''}" onclick="renderDashboard('overdracht')">Ploegenoverdrachten</button><button class="tab ${tab==='ingang'?'active':''}" onclick="renderDashboard('ingang')">Ingangscontroles</button><button class="tab ${tab==='expeditie'?'active':''}" onclick="renderDashboard('expeditie')">Expeditie</button></div><div class="grid"><div class="stat"><small>Aantal</small><strong>${rows.length}</strong></div><div class="stat"><small>Deze week</small><strong>${rows.filter(r=>weekRec(r)===weekNo(new Date())).length}</strong></div><div class="stat"><small>Modus</small><strong>Lite</strong></div><div class="stat"><small>Vandaag</small><strong>${rows.filter(r=>isoDate(r)===new Date().toISOString().slice(0,10)).length}</strong></div></div><div class="card"><h2>Zoeken/filteren</h2><div class="filtergrid"><div><label>Vanaf</label><input type="date" id="fFrom" oninput="filterDash('${tab}')"></div><div><label>Tot</label><input type="date" id="fTo" oninput="filterDash('${tab}')"></div><div><label>Week</label><input type="number" id="fWeek" oninput="filterDash('${tab}')"></div><div><label>Zoeken</label><input type="text" id="fText" oninput="filterDash('${tab}')"></div><button class="secondary" onclick="renderDashboard('${tab}')">Wis</button></div></div><div class="card"><h2>${tab==='ingang'?'Ingangscontroles':tab==='expeditie'?'Expeditiecontroles':'Ploegenoverdrachten'}</h2><div id="dashTable"></div></div>`;renderDashTable(tab,rows)}
 function filterDash(tab){let rows=[...rowsFor(tab)],f=fFrom.value,t=fTo.value,w=fWeek.value,q=fText.value.toLowerCase();if(f)rows=rows.filter(r=>isoDate(r)>=f);if(t)rows=rows.filter(r=>isoDate(r)<=t);if(w)rows=rows.filter(r=>String(weekRec(r))===String(w));if(q)rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q));renderDashTable(tab,rows)}
-function renderDashTable(tab,rows){if(!rows.length){dashTable.innerHTML="<p>Geen resultaten.</p>";return}let head="",body="";if(tab==="overdracht"){head="<th>Datum</th><th>Week</th><th>Overdragend</th><th>Ontvangend</th><th>Checklist</th><th>5S</th><th>Foto's</th><th>Acties</th>";body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td>${r.items.filter(x=>x.checked).length}/${r.items.length}</td><td>${r.fiveS.filter(x=>x.checked).length}/${r.fiveS.length}</td><td>${thumbs(r)}</td><td><button onclick="openHandover('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverById('${r.id}')">PDF</button></td></tr>`).join("")}else if(tab==="ingang"){head="<th>Datum</th><th>Week</th><th>Order</th><th>Controleur</th><th>Checklist</th><th>Foto's</th><th>Acties</th>";body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.orderNumber)}</td><td>${esc(r.controller||"-")}</td><td>${r.items.filter(x=>x.checked).length}/${r.items.length}</td><td>${thumbs(r)}</td><td><button onclick="openInbound('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundById('${r.id}')">PDF</button></td></tr>`).join("")}else{head="<th>Datum</th><th>Week</th><th>Vracht</th><th>Zonder schade</th><th>Foto's</th><th>Acties</th>";body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td>${thumbs(r)}</td><td><button onclick="openExpeditie('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieById('${r.id}')">PDF</button></td></tr>`).join("")}dashTable.innerHTML=`<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`}
+
+function renderDashTable(tab,rows){
+ if(!rows.length){dashTable.innerHTML="<p>Geen resultaten.</p>";return}
+ let head="",body="";
+ if(tab==="overdracht"){
+   head="<th>Datum</th><th>Week</th><th>Overdragend</th><th>Ontvangend</th><th>Acties</th>";
+   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td><button onclick="openHandover('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverById('${r.id}')">PDF</button></td></tr>`).join("");
+ }else if(tab==="ingang"){
+   head="<th>Datum</th><th>Week</th><th>Order</th><th>Controleur</th><th>Acties</th>";
+   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.orderNumber)}</td><td>${esc(r.controller||"-")}</td><td><button onclick="openInbound('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundById('${r.id}')">PDF</button></td></tr>`).join("");
+ }else{
+   head="<th>Datum</th><th>Week</th><th>Vracht</th><th>Zonder schade</th><th>Acties</th>";
+   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td><button onclick="openExpeditie('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieById('${r.id}')">PDF</button></td></tr>`).join("");
+ }
+ dashTable.innerHTML=`<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
 
 function photoBox(obj,key,add,remove){if(!obj[key])obj[key]=[];return `<div class="photo-box"><div style="display:flex;gap:10px;flex-wrap:wrap"><label class="btnlabel">Foto maken<input style="display:none" type="file" accept="image/*" capture="environment" multiple onchange="${add}"></label><label class="btnlabel secondary">Foto uit album<input style="display:none" type="file" accept="image/*" multiple onchange="${add}"></label></div><div class="photo-grid">${obj[key].map((p,i)=>`<div class="photo"><img src="${p}" onclick="openPhoto('${p}')"><button onclick="${remove}${i})">x</button></div>`).join("")}</div></div>`}
 
@@ -237,7 +295,7 @@ function showLogin(){
     <label>Wachtwoord</label>
     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="wachtwoord">
     <button style="width:100%;margin-top:16px" onclick="login()">Inloggen</button>
-    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: foto compressie 100kb v1</b></p>
+    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: timeout structureel v1</b></p>
   </div>`;
 }
 
@@ -672,6 +730,15 @@ async function pdfExpeditieFromDb(id){
   await openExpeditieFromDb(id);
   pdfExpeditie();
 }
+
+
+// Dashboard opent voortaan altijd volledige data pas bij openen/PDF
+function openHandover(id){ return openHandoverFromDb(id); }
+function openInbound(id){ return openInboundFromDb(id); }
+function openExpeditie(id){ return openExpeditieFromDb(id); }
+function pdfHandoverById(id){ return pdfHandoverFromDb(id); }
+function pdfInboundById(id){ return pdfInboundFromDb(id); }
+function pdfExpeditieById(id){ return pdfExpeditieFromDb(id); }
 
 function boot(){
   const saved=localStorage.getItem("cde_current_user");

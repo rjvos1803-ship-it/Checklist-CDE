@@ -33,3 +33,11 @@ FOTO COMPRESSIE:
 - Foto's worden automatisch omgezet naar JPEG.
 - Foto's worden verkleind/gecomprimeerd tot ongeveer maximaal 100 KB per foto.
 - Dit voorkomt Supabase timeouts en houdt rapporten sneller.
+
+
+STRUCTURELE TIMEOUT FIX:
+- Dashboard haalt geen foto's/checklist JSON meer vooraf op.
+- Dashboard haalt alleen lichte overzichtsdata op.
+- Volledige rapporten worden pas geladen bij Open of PDF.
+- Foto's worden nog steeds gecomprimeerd naar ca. 100 KB.
+- Voer supabase-setup.sql opnieuw uit voor indexen.
