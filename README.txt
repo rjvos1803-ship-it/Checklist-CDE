@@ -41,3 +41,13 @@ STRUCTURELE TIMEOUT FIX:
 - Volledige rapporten worden pas geladen bij Open of PDF.
 - Foto's worden nog steeds gecomprimeerd naar ca. 100 KB.
 - Voer supabase-setup.sql opnieuw uit voor indexen.
+
+
+ADMIN RAPPORTEN VERWIJDEREN:
+- Admin ziet nu bij rapporten een knop Verwijderen.
+- Alleen Admin ziet deze knop.
+- Werkt voor:
+  Ploegenoverdrachten
+  Ingangscontroles
+  Expeditiecontroles
+- Voer supabase-setup.sql opnieuw uit voor delete policies.

@@ -160,13 +160,13 @@ function renderDashTable(tab,rows){
  let head="",body="";
  if(tab==="overdracht"){
    head="<th>Datum</th><th>Week</th><th>Overdragend</th><th>Ontvangend</th><th>Acties</th>";
-   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td><button onclick="openHandover('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverById('${r.id}')">PDF</button></td></tr>`).join("");
+   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td><button onclick="openHandover('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverById('${r.id}')">PDF</button>${adminDeleteButton("overdracht",r.id)}</td></tr>`).join("");
  }else if(tab==="ingang"){
    head="<th>Datum</th><th>Week</th><th>Order</th><th>Controleur</th><th>Acties</th>";
-   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.orderNumber)}</td><td>${esc(r.controller||"-")}</td><td><button onclick="openInbound('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundById('${r.id}')">PDF</button></td></tr>`).join("");
+   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.orderNumber)}</td><td>${esc(r.controller||"-")}</td><td><button onclick="openInbound('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundById('${r.id}')">PDF</button>${adminDeleteButton("ingang",r.id)}</td></tr>`).join("");
  }else{
    head="<th>Datum</th><th>Week</th><th>Vracht</th><th>Zonder schade</th><th>Acties</th>";
-   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td><button onclick="openExpeditie('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieById('${r.id}')">PDF</button></td></tr>`).join("");
+   body=rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>Wk ${weekRec(r)||"-"}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td><button onclick="openExpeditie('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieById('${r.id}')">PDF</button>${adminDeleteButton("expeditie",r.id)}</td></tr>`).join("");
  }
  dashTable.innerHTML=`<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
@@ -295,7 +295,7 @@ function showLogin(){
     <label>Wachtwoord</label>
     <input id="loginPassword" type="password" autocomplete="current-password" placeholder="wachtwoord">
     <button style="width:100%;margin-top:16px" onclick="login()">Inloggen</button>
-    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: timeout structureel v1</b></p>
+    <p style="font-size:12px;color:#64748b;margin-top:14px"><b>Versie: admin verwijderen rapporten v1</b></p>
   </div>`;
 }
 
@@ -650,19 +650,19 @@ function renderMyReportsTab(tab){
 
   if(tab==="overdracht"){
     myReportsTable.innerHTML=`<h2>Mijn overdrachten</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Overdragend</th><th>Ontvangend</th><th>Acties</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td><button onclick="openHandoverFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverFromDb('${r.id}')">PDF</button></td></tr>`).join("")}
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.handoverLeader||"-")}</td><td>${esc(r.receivingLeader||"-")}</td><td><button onclick="openHandoverFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfHandoverFromDb('${r.id}')">PDF</button>${adminDeleteButton("overdracht",r.id)}</td></tr>`).join("")}
     </tbody></table></div>`;
   }
 
   if(tab==="ingang"){
     myReportsTable.innerHTML=`<h2>Mijn ingangscontroles</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Order</th><th>Controleur</th><th>Acties</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.orderNumber||"-")}</td><td>${esc(r.controller||"-")}</td><td><button onclick="openInboundFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundFromDb('${r.id}')">PDF</button></td></tr>`).join("")}
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.orderNumber||"-")}</td><td>${esc(r.controller||"-")}</td><td><button onclick="openInboundFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfInboundFromDb('${r.id}')">PDF</button>${adminDeleteButton("ingang",r.id)}</td></tr>`).join("")}
     </tbody></table></div>`;
   }
 
   if(tab==="expeditie"){
     myReportsTable.innerHTML=`<h2>Mijn expeditiecontroles</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Vracht</th><th>Zonder schade</th><th>Acties</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td><button onclick="openExpeditieFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieFromDb('${r.id}')">PDF</button></td></tr>`).join("")}
+    ${rows.map(r=>`<tr><td>${esc(r.dateTime)}</td><td>${esc(r.vrachtType||"-")}</td><td>${esc(r.zonderSchade||"-")}</td><td><button onclick="openExpeditieFromDb('${r.id}')">Open</button> <button class="orange" onclick="pdfExpeditieFromDb('${r.id}')">PDF</button>${adminDeleteButton("expeditie",r.id)}</td></tr>`).join("")}
     </tbody></table></div>`;
   }
 }
@@ -739,6 +739,43 @@ function openExpeditie(id){ return openExpeditieFromDb(id); }
 function pdfHandoverById(id){ return pdfHandoverFromDb(id); }
 function pdfInboundById(id){ return pdfInboundFromDb(id); }
 function pdfExpeditieById(id){ return pdfExpeditieFromDb(id); }
+
+
+async function deleteHandoverReport(id){
+  if(!currentUser?.is_admin) return deny();
+  if(!confirm("Weet je zeker dat je deze ploegenoverdracht wilt verwijderen?")) return;
+  const {error}=await supabaseClient.from("overdrachten").delete().eq("id",id);
+  if(error) return alert("Verwijderen mislukt: "+error.message);
+  alert("Rapport verwijderd.");
+  showDashboard();
+}
+
+async function deleteInboundReport(id){
+  if(!currentUser?.is_admin) return deny();
+  if(!confirm("Weet je zeker dat je deze ingangscontrole wilt verwijderen?")) return;
+  const {error}=await supabaseClient.from("ingangscontroles").delete().eq("id",id);
+  if(error) return alert("Verwijderen mislukt: "+error.message);
+  alert("Rapport verwijderd.");
+  showDashboard();
+}
+
+async function deleteExpeditieReport(id){
+  if(!currentUser?.is_admin) return deny();
+  if(!confirm("Weet je zeker dat je deze expeditiecontrole wilt verwijderen?")) return;
+  const {error}=await supabaseClient.from("expeditiecontroles").delete().eq("id",id);
+  if(error) return alert("Verwijderen mislukt: "+error.message);
+  alert("Rapport verwijderd.");
+  showDashboard();
+}
+
+function adminDeleteButton(type,id){
+  if(!currentUser?.is_admin) return "";
+  if(type==="overdracht") return ` <button class="danger" onclick="deleteHandoverReport('${id}')">Verwijderen</button>`;
+  if(type==="ingang") return ` <button class="danger" onclick="deleteInboundReport('${id}')">Verwijderen</button>`;
+  if(type==="expeditie") return ` <button class="danger" onclick="deleteExpeditieReport('${id}')">Verwijderen</button>`;
+  return "";
+}
+
 
 function boot(){
   const saved=localStorage.getItem("cde_current_user");
